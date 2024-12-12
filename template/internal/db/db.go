@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net"
 
 	"module/placeholder/internal/db/migrations"
@@ -85,13 +84,13 @@ func CloudSQL(dsn, instanceConnectionName string) (DB, error) {
 }
 
 func MigrateTables(db DB) error {
-	if db.conn == nil {
-		log.Println("migrations: db is nil")
-		return nil
-	}
-	_, err := db.Conn().ExecContext(context.Background(), migrations.Migrations)
-	if err != nil {
-		return fmt.Errorf("error executing sql: %v", err)
+	files, _ := migrations.MigrationDir.ReadDir(".")
+	for _, file := range files {
+		data, _ := migrations.MigrationDir.ReadFile(file.Name())
+		_, err := db.Conn().Exec(string(data))
+		if err != nil {
+			return fmt.Errorf("error executing sql: %v", err)
+		}
 	}
 	return nil
 }

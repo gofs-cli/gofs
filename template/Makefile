@@ -35,6 +35,10 @@ gendata: dbdown dbup
 	@go test -v -tags=gendata -count=1 ./...
 .PHONY: gendata
 
+codegen:
+	@go generate ./...
+.PHONY: gencode
+
 air: 
 	@echo "Installing air"
 	@go install github.com/air-verse/air@latest
