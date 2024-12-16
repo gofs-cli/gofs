@@ -20,7 +20,7 @@ type Command struct {
 	// "<Long>"
 	Long string
 	// Cmd is the function that is called when the command is matched.
-	Cmd func() error
+	Cmd func()
 }
 
 type Cli struct {
@@ -65,12 +65,7 @@ func (c *Cli) Run() {
 	if !ok {
 		c.usage()
 	}
-	err := cm.Cmd()
-	if err != nil {
-		fmt.Println(err)
-		fmt.Println(cm.Long)
-		os.Exit(1)
-	}
+	cm.Cmd()
 	os.Exit(0)
 }
 

@@ -35,7 +35,7 @@ func init() {
 	})
 }
 
-func cmdInit() error {
+func cmdInit() {
 	args := os.Args[2:] // skip program name and command
 
 	moduleName := ""
@@ -44,21 +44,25 @@ func cmdInit() error {
 
 	switch {
 	case len(args) == 0:
-		return fmt.Errorf("init: missing module name")
+		fmt.Println("init: missing module name")
+		fmt.Print(initUsage)
+		return
 	case len(args) == 1:
 		moduleName = args[0]
 		dir, err = os.Getwd()
 		if err != nil {
-			return fmt.Errorf("init: %s", err)
+			fmt.Println("init: ", err)
+			return
 		}
 	case len(args) == 2:
 		moduleName = args[0]
 		dir = args[1]
 	default:
-		return fmt.Errorf("init: too many arguments")
+		fmt.Println("init: too many arguments")
+		fmt.Print(initUsage)
+		return
 	}
 
 	parser := gen.NewParser(dir, defaultModuleName, moduleName, folder.Folder)
 	parser.Parse()
-	return nil
 }
