@@ -8,14 +8,13 @@ import (
 	"strings"
 
 	"github.com/kynrai/gofs/internal/codegen"
+	"github.com/kynrai/gofs/internal/gofs"
 )
 
-const codegenUsage = `usage: gofs codegen db -struct=[struct name] < -migrationsDir=[dir] >
+const codegenUsage = `usage: gofs codegen [template] -struct=[struct name]
 
-Experimental: "codegen" generates helper functions for reading and writing a struct to a database
-based on gofs decorations. This should be used as a go:generate directive in the source code.
-'migrationsDir' is an optional parameter to the directory where the generated sql file will be saved, 
-and defaults to internal/db/migrations if not provided.
+Experimental: "codegen" generates code from go templates. 
+This should be used as a go:generate directive in the source code.
 
 Example:
 //go:generate gofs codegen db -struct=Foo
@@ -26,17 +25,10 @@ type Foo struct {
 
 `
 
-const (
-	dbCrudTemplate = "db.tmpl"
-	dbSqlTemplate  = "sql.tmpl"
-	gofsDir        = ".gofs"
-	migrationsDir  = "internal/db/migrations"
-)
-
 func init() {
 	Gofs.AddCmd(Command{
 		Name:  "codegen",
-		Short: "generate gofs db helper functions for a struct",
+		Short: "generate go code from struct",
 		Long:  codegenUsage,
 		Cmd:   cmdCodegen,
 	})
@@ -67,25 +59,30 @@ func cmdCodegen() {
 		return
 	}
 
-	md := migrationsDir
-	for _, arg := range os.Args {
-		if strings.HasPrefix(arg, "-migrationsDir=") {
-			md = strings.TrimPrefix(arg, "-migrationsDir=")
-			break
-		}
-	}
-
 	projectRoot, err := findProjectRoot()
 	if err != nil {
 		fmt.Println("codegen: ", err)
 		return
 	}
 
-	if slices.Contains(os.Args, "db") {
-		err := codegen.CodegenDB(gofile, gopackage, gostruct, md, projectRoot)
-		if err != nil {
-			fmt.Println(err)
-			return
+	templates, err := gofs.LoadTemplates(projectRoot)
+	if err != nil {
+		fmt.Println("codegen: Error loading templates ", err)
+		return
+	}
+
+	for _, template := range templates {
+		if slices.Contains(os.Args, template.Name) {
+			o := strings.ToLower(gostruct) + template.Suffix
+			if template.OutputDir != "" {
+				o = filepath.Join(projectRoot, template.OutputDir, o)
+			}
+			t := filepath.Join(projectRoot, gofs.GofsDir, template.Tmpl)
+			err := codegen.Codegen(gofile, gopackage, gostruct, o, t)
+			if err != nil {
+				fmt.Println("codegen: ", err)
+				return
+			}
 		}
 	}
 }
@@ -101,7 +98,7 @@ func findProjectRoot() (string, error) {
 		}
 		cwd, _ = filepath.Split(cwd)
 		// the gofs directory is the root of the project
-		if _, err := os.Stat(filepath.Join(cwd, gofsDir)); err == nil {
+		if _, err := os.Stat(filepath.Join(cwd, gofs.GofsDir)); err == nil {
 			return cwd, nil
 		}
 		cwd = filepath.Clean(cwd)
