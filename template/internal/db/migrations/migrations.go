@@ -1,8 +1,8 @@
 package migrations
 
 import (
-	_ "embed"
+	"embed"
 )
 
-//go:embed migrations.sql
-var Migrations string
+//go:embed *.sql
+var Dir embed.FS
