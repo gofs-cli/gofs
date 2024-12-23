@@ -84,9 +84,9 @@ func CloudSQL(dsn, instanceConnectionName string) (DB, error) {
 }
 
 func MigrateTables(db DB) error {
-	files, _ := migrations.MigrationDir.ReadDir(".")
+	files, _ := migrations.Dir.ReadDir(".")
 	for _, file := range files {
-		data, _ := migrations.MigrationDir.ReadFile(file.Name())
+		data, _ := migrations.Dir.ReadFile(file.Name())
 		_, err := db.Conn().Exec(string(data))
 		if err != nil {
 			return fmt.Errorf("error executing sql: %v", err)

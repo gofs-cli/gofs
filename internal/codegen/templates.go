@@ -1,4 +1,4 @@
-package gofs
+package codegen
 
 import (
 	"encoding/json"
@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	GofsDir       = ".gofs"
-	TemplatesFile = "templates.json"
+	TemplatesDir = "templates"
+	cfg          = "templates.json"
 )
 
 type Template struct {
@@ -18,9 +18,9 @@ type Template struct {
 	Suffix    string `json:"suffix"`
 }
 
-func LoadTemplates(projectRoot string) ([]Template, error) {
-	templatesFile := filepath.Join(projectRoot, GofsDir, TemplatesFile)
-	f, err := os.Open(templatesFile)
+func LoadTemplates(gofsDir string) ([]Template, error) {
+	cfgFile := filepath.Join(gofsDir, TemplatesDir, cfg)
+	f, err := os.Open(cfgFile)
 	if err != nil {
 		return nil, err
 	}

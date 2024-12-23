@@ -9,6 +9,10 @@ import (
 	"text/template"
 )
 
+const (
+	GofsDir = ".gofs"
+)
+
 type Command struct {
 	// The command name, used to match the command line argument e.g. clitool <Name>.
 	Name string

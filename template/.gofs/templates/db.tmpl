@@ -23,8 +23,8 @@ func create{{.StructName}}(ctx context.Context, tx *sql.Tx, v *{{.StructName}}) 
 	if err != nil {
 		return err
 	}
-	_, err = tx.ExecContext(ctx, "INSERT INTO {{.StructName | Snake}}s (last_updated, blob{{range .AllFields}}, {{.FieldName | Snake}}{{end}}) VALUES ($1, $2{{range .AllFields}}, ${{Add .FieldNumber 3}}{{end}})",
-		time.Now().UTC(), jsonb{{range .AllFields}}, v.{{.FieldName}}{{end}})
+	_, err = tx.ExecContext(ctx, "INSERT INTO {{.StructName | Snake}}s (last_updated, blob{{range .GofsFields}}, {{.FieldName | Snake}}{{end}}) VALUES ($1, $2{{range .GofsFields}}, ${{Add .FieldNumber 3}}{{end}})",
+		time.Now().UTC(), jsonb{{range .GofsFields}}, v.{{.FieldName}}{{end}})
 	return err
 }
 

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/kynrai/gofs/internal/codegen"
-	"github.com/kynrai/gofs/internal/gofs"
 )
 
 const codegenUsage = `usage: gofs codegen [template] -struct=[struct name]
@@ -38,13 +37,13 @@ func cmdCodegen() {
 	gofile := os.Getenv("GOFILE")
 	if gofile == "" {
 		fmt.Println("codegen: GOFILE not set")
-		return
+		os.Exit(1)
 	}
 
 	gopackage := os.Getenv("GOPACKAGE")
 	if gopackage == "" {
 		fmt.Println("codegen: GOPACKAGE not set")
-		return
+		os.Exit(1)
 	}
 
 	gostruct := ""
@@ -56,19 +55,19 @@ func cmdCodegen() {
 	}
 	if gostruct == "" {
 		fmt.Println("codegen: struct name not set")
-		return
+		os.Exit(1)
 	}
 
 	projectRoot, err := findProjectRoot()
 	if err != nil {
 		fmt.Println("codegen: ", err)
-		return
+		os.Exit(1)
 	}
 
-	templates, err := gofs.LoadTemplates(projectRoot)
+	templates, err := codegen.LoadTemplates(filepath.Join(projectRoot, GofsDir))
 	if err != nil {
 		fmt.Println("codegen: Error loading templates ", err)
-		return
+		os.Exit(1)
 	}
 
 	for _, template := range templates {
@@ -77,11 +76,11 @@ func cmdCodegen() {
 			if template.OutputDir != "" {
 				o = filepath.Join(projectRoot, template.OutputDir, o)
 			}
-			t := filepath.Join(projectRoot, gofs.GofsDir, template.Tmpl)
+			t := filepath.Join(projectRoot, GofsDir, codegen.TemplatesDir, template.Tmpl)
 			err := codegen.Codegen(gofile, gopackage, gostruct, o, t)
 			if err != nil {
 				fmt.Println("codegen: ", err)
-				return
+				os.Exit(1)
 			}
 		}
 	}
@@ -98,7 +97,7 @@ func findProjectRoot() (string, error) {
 		}
 		cwd, _ = filepath.Split(cwd)
 		// the gofs directory is the root of the project
-		if _, err := os.Stat(filepath.Join(cwd, gofs.GofsDir)); err == nil {
+		if _, err := os.Stat(filepath.Join(cwd, GofsDir)); err == nil {
 			return cwd, nil
 		}
 		cwd = filepath.Clean(cwd)
