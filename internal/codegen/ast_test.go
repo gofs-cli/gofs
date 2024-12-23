@@ -10,8 +10,7 @@ import (
 func TestFindDeclReturnStructType(t *testing.T) {
 	t.Parallel()
 
-	input := `
-package main
+	input := `package main
 
 type Foo struct {
 	Bar  string
@@ -24,17 +23,19 @@ type Foo struct {
 		t.Fatal(err)
 	}
 
-	st, err := findDecl("Foo", f)
+	st, err := findDecl(3, f, fset)
 	if err != nil || st == nil {
 		t.Fatal("Expected to find struct Foo and did not")
+	}
+	if st.Name.Name != "Foo" {
+		t.Fatal("Expected name to be Foo but got ", st.Name.Name)
 	}
 }
 
 func TestFindDeclReturnError(t *testing.T) {
 	t.Parallel()
 
-	input := `
-package main
+	input := `package main
 
 type Foo struct {
 	Bar  string
@@ -47,17 +48,16 @@ type Foo struct {
 		t.Fatal(err)
 	}
 
-	st, err := findDecl("Foo2", f)
+	st, err := findDecl(2, f, fset)
 	if err == nil || st != nil {
-		t.Fatal("Should not find struct Foo2 and found it")
+		t.Fatal("Should not find struct on line 2 and found it")
 	}
 }
 
 func TestAstStructFromStructType(t *testing.T) {
 	t.Parallel()
 
-	input := `
-package main
+	input := `package main
 
 type Foo struct {
 	ID        string  ` + "`" + `json:"id"  gofs:"pk"` + "`" + ` 
@@ -74,12 +74,12 @@ type Foo struct {
 		t.Fatal(err)
 	}
 
-	st, err := findDecl("Foo", f)
+	st, err := findDecl(3, f, fset)
 	if err != nil || st == nil {
 		t.Fatal("Expected to find struct Foo and did not")
 	}
 
-	astStruct, err := astStructFromStructType("Foo", "main", st)
+	astStruct, err := astStructFromStructType("main", st)
 	if err != nil || astStruct == nil {
 		t.Fatal(err)
 	}

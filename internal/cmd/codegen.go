@@ -5,9 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/kynrai/gofs/internal/codegen"
+	"github.com/kynrai/gofs/internal/tmpl"
 )
 
 const codegenUsage = `usage: gofs codegen [template] -struct=[struct name]
@@ -16,7 +18,7 @@ Experimental: "codegen" generates code from go templates.
 This should be used as a go:generate directive in the source code.
 
 Example:
-//go:generate gofs codegen db -struct=Foo
+//go:generate gofs codegen db
 type Foo struct {
 	ID   string  'json:"id"  gofs:"pk"'
 	Bar  string  'json:"bar" gofs:"searchable'
@@ -46,15 +48,14 @@ func cmdCodegen() {
 		os.Exit(1)
 	}
 
-	gostruct := ""
-	for _, arg := range os.Args {
-		if strings.HasPrefix(arg, "-struct=") {
-			gostruct = strings.TrimPrefix(arg, "-struct=")
-			break
-		}
+	golinestr := os.Getenv("GOLINE")
+	if golinestr == "" {
+		fmt.Println("codegen: GOLINE not set")
+		os.Exit(1)
 	}
-	if gostruct == "" {
-		fmt.Println("codegen: struct name not set")
+	goline, err := strconv.Atoi(golinestr)
+	if err != nil {
+		fmt.Println("codegen: GOLINE not a number")
 		os.Exit(1)
 	}
 
@@ -70,14 +71,22 @@ func cmdCodegen() {
 		os.Exit(1)
 	}
 
+	// the struct is on the line after go generate
+	a, err := codegen.GetAstStruct(gofile, gopackage, goline+1)
+	if err != nil || a == nil {
+		fmt.Println("codegen: ", err)
+		os.Exit(1)
+	}
+
 	for _, template := range templates {
 		if slices.Contains(os.Args, template.Name) {
-			o := strings.ToLower(gostruct) + template.Suffix
+			t := filepath.Join(projectRoot, GofsDir, codegen.TemplatesDir, template.Tmpl)
+			o := strings.ToLower(a.StructName) + template.Suffix
 			if template.OutputDir != "" {
 				o = filepath.Join(projectRoot, template.OutputDir, o)
 			}
-			t := filepath.Join(projectRoot, GofsDir, codegen.TemplatesDir, template.Tmpl)
-			err := codegen.Codegen(gofile, gopackage, gostruct, o, t)
+
+			err = tmpl.Generate(o, t, a)
 			if err != nil {
 				fmt.Println("codegen: ", err)
 				os.Exit(1)

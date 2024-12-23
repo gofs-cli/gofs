@@ -25,19 +25,19 @@ type AstStruct struct {
 	SearchableFields []AstField
 }
 
-func getAstStruct(gofile, gostruct, gopackage string) (*AstStruct, error) {
+func GetAstStruct(gofile, gopackage string, goline int) (*AstStruct, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, gofile, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	st, err := findDecl(gostruct, f)
+	t, err := findDecl(goline, f, fset)
 	if err != nil {
 		return nil, err
 	}
 
-	return astStructFromStructType(gostruct, gopackage, st)
+	return astStructFromStructType(gopackage, t)
 }
 
 func dbType(t string) string {
@@ -74,38 +74,37 @@ func getType(a ast.Expr) (string, error) {
 	}
 }
 
-func findDecl(gostruct string, f *ast.File) (*ast.StructType, error) {
+func findDecl(goline int, f *ast.File, fset *token.FileSet) (*ast.TypeSpec, error) {
 	for _, decl := range f.Decls {
 		if genDecl, ok := decl.(*ast.GenDecl); ok {
-			// find the struct declaration
-			if genDecl.Tok != token.TYPE || genDecl.Specs[0].(*ast.TypeSpec).Name.Name != gostruct {
+			// skip declarations that are not types or on the line we are looking for
+			if fset.Position(genDecl.TokPos).Line != goline || genDecl.Tok != token.TYPE {
 				continue
 			}
-			// we know gostruct is a typespec, so check that its a struct
-			t, ok := genDecl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType)
-			if !ok {
-				return nil, fmt.Errorf("type %s is not a struct", gostruct)
+			// check that its a struct
+			if _, ok := genDecl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType); !ok {
+				return nil, fmt.Errorf("type is not a struct")
 			}
-			return t, nil
+			return genDecl.Specs[0].(*ast.TypeSpec), nil
 		}
 	}
-	return nil, fmt.Errorf("struct %s not found", gostruct)
+	return nil, fmt.Errorf("struct not found")
 }
 
-func astStructFromStructType(gostruct, gopackage string, st *ast.StructType) (*AstStruct, error) {
+func astStructFromStructType(gopackage string, t *ast.TypeSpec) (*AstStruct, error) {
 	a := AstStruct{
 		Package:    gopackage,
-		StructName: gostruct,
+		StructName: t.Name.Name,
 	}
 	// parse the gofs tags for pk and searchable fields
-	for _, field := range st.Fields.List {
+	for _, field := range t.Type.(*ast.StructType).Fields.List {
 		ft, err := getType(field.Type)
 		if err != nil {
 			return nil, err
 		}
 
 		a.AllFields = append(a.AllFields, AstField{
-			StructName:  gostruct,
+			StructName:  t.Name.Name,
 			FieldNumber: len(a.AllFields),
 			FieldName:   field.Names[0].Name,
 			FieldType:   ft,
@@ -117,7 +116,7 @@ func astStructFromStructType(gostruct, gopackage string, st *ast.StructType) (*A
 
 		if strings.Contains(field.Tag.Value, "gofs") {
 			a.GofsFields = append(a.GofsFields, AstField{
-				StructName:  gostruct,
+				StructName:  t.Name.Name,
 				FieldNumber: len(a.GofsFields),
 				FieldName:   field.Names[0].Name,
 				FieldType:   ft,
@@ -125,7 +124,7 @@ func astStructFromStructType(gostruct, gopackage string, st *ast.StructType) (*A
 			})
 			if strings.Contains(field.Tag.Value, "gofs:\"pk\"") {
 				a.PkFields = append(a.PkFields, AstField{
-					StructName:  gostruct,
+					StructName:  t.Name.Name,
 					FieldNumber: len(a.PkFields),
 					FieldName:   field.Names[0].Name,
 					FieldType:   ft,
@@ -134,7 +133,7 @@ func astStructFromStructType(gostruct, gopackage string, st *ast.StructType) (*A
 			}
 			if strings.Contains(field.Tag.Value, "gofs:\"searchable\"") {
 				a.SearchableFields = append(a.SearchableFields, AstField{
-					StructName:  gostruct,
+					StructName:  t.Name.Name,
 					FieldNumber: len(a.SearchableFields),
 					FieldName:   field.Names[0].Name,
 					FieldType:   ft,
