@@ -12,7 +12,7 @@ import (
 	"github.com/kynrai/gofs/internal/tmpl"
 )
 
-const codegenUsage = `usage: gofs codegen [template] -struct=[struct name]
+const codegenUsage = `usage: gofs codegen [template] [template] ...
 
 Experimental: "codegen" generates code from go templates. 
 This should be used as a go:generate directive in the source code.
