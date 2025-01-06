@@ -17,7 +17,7 @@ import (
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/ast/astutil"
 
-	"github.com/kynrai/gofs/internal/vscode"
+	"github.com/gofs-cli/gofs/internal/vscode"
 )
 
 type Parser struct {

@@ -11,7 +11,7 @@
   },
   "editor.formatOnSave": true,
   "gopls": {
-    "formatting.local": "github.com/kynrai/gofs",
+    "formatting.local": "github.com/gofs-cli/gofs",
     "formatting.gofumpt": true,
     "build.buildFlags": ["-tags=unit,gendata"]
   },

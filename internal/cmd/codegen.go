@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kynrai/gofs/internal/codegen"
-	"github.com/kynrai/gofs/internal/tmpl"
+	"github.com/gofs-cli/gofs/internal/codegen"
+	"github.com/gofs-cli/gofs/internal/tmpl"
 )
 
 const codegenUsage = `usage: gofs codegen [template] [template] ...

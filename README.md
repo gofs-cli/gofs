@@ -5,7 +5,7 @@
 ## Installation
 
 ```bash
-git clone git@github.com:kynrai/go-fs.git
+git clone git@github.com:gofs-cli/go-fs.git
 cd go-fs
 go mod tidy
 go install

@@ -5,7 +5,7 @@ import (
 	folder "module/placeholder"
 	"os"
 
-	"github.com/kynrai/gofs/internal/gen"
+	"github.com/gofs-cli/gofs/internal/gen"
 )
 
 const (

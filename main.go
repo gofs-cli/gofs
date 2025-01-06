@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kynrai/gofs/internal/cmd"
+	"github.com/gofs-cli/gofs/internal/cmd"
 )
 
 func main() {

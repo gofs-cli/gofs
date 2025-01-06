@@ -1,4 +1,4 @@
-module github.com/kynrai/gofs
+module github.com/gofs-cli/gofs
 
 go 1.23.0
 
