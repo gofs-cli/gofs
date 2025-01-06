@@ -6,7 +6,6 @@ import (
 	"module/placeholder/internal/server/assets"
 	"module/placeholder/internal/server/handlers"
 	"module/placeholder/internal/server/handlers/page"
-	"module/placeholder/internal/server/logging"
 	"module/placeholder/internal/ui"
 	"module/placeholder/internal/ui/pages/validation"
 )
@@ -37,6 +36,5 @@ func (s *Server) Routes() {
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
-	defer logging.Trace(r.Context(), "hello").End()
 	w.Write([]byte("Hello, World!"))
 }

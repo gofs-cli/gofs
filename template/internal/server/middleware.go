@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"module/placeholder/internal/auth"
-	"module/placeholder/internal/server/telemetry/tracing"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -41,7 +40,6 @@ func (s *Server) routeMiddlewares(h http.Handler) http.Handler {
 			MaxAge:           300,
 		}),
 		middleware.Logger,
-		tracing.Middleware,
 		middleware.NoCache,
 		middleware.StripSlashes,
 		middleware.Recoverer,

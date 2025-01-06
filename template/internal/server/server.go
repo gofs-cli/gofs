@@ -51,10 +51,6 @@ func (s *Server) initDb() (db.DB, error) {
 	switch {
 	case s.conf.Env.Local() && s.conf.DSN != "":
 		return db.LocalPG(s.conf.DSN)
-	case s.conf.Env.Dev() && s.conf.DSN != "":
-		return db.CloudSQL(s.conf.DSN, s.conf.ICN)
-	case s.conf.Env.Prod() && s.conf.DSN != "":
-		return db.CloudSQL(s.conf.DSN, s.conf.ICN)
 	default:
 		log.Println("server: no database connection")
 		return db.DB{}, nil
