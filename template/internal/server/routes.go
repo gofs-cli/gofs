@@ -7,7 +7,8 @@ import (
 	"module/placeholder/internal/server/handlers"
 	"module/placeholder/internal/server/handlers/page"
 	"module/placeholder/internal/server/logging"
-	"module/placeholder/internal/server/telemetry/metrics"
+	"module/placeholder/internal/ui"
+	"module/placeholder/internal/ui/pages/validation"
 )
 
 func (s *Server) Routes() {
@@ -23,16 +24,16 @@ func (s *Server) Routes() {
 
 	routesMux.Handle("GET /hello", http.HandlerFunc(hello))
 
-	routesMux.Handle("/validate", handlers.Validate())
+	routesMux.Handle("/validate", validation.HandleNameValidation())
 
-	routesMux.Handle("GET /toast-success", handlers.ToastSuccessDemo())
-	routesMux.Handle("GET /toast-info", handlers.ToastInfoDemo())
-	routesMux.Handle("GET /toast-warning", handlers.ToastWarningDemo())
-	routesMux.Handle("GET /toast-error", handlers.ToastErrorDemo())
+	routesMux.Handle("GET /toast-success", ui.Success())
+	routesMux.Handle("GET /toast-info", ui.Info())
+	routesMux.Handle("GET /toast-warning", ui.Warning())
+	routesMux.Handle("GET /toast-error", ui.Error())
 
 	s.r.Handle("/", s.routeMiddlewares(routesMux))
 
-	s.srv.Handler = metrics.Expose(s.r)
+	s.srv.Handler = s.r
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {

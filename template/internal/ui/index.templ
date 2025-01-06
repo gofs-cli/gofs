@@ -2,6 +2,7 @@ package ui
 
 import (
 	"module/placeholder/internal/ui/components"
+	"module/placeholder/internal/ui/components/toast"
 	"module/placeholder/internal/ui/pages/validation"
 )
 
@@ -25,7 +26,7 @@ templ Index() {
 		// when an API request fails. This is a more declarative way to handle errors than using JavaScript.
 		// https://github.com/bigskysoftware/htmx-extensions/blob/main/src/response-targets/README.md
 		<body hx-ext="response-targets" hx-target-error="this">
-			@components.ToastContainer()
+			@toast.Container()
 			<main class="flex w-full flex-col">
 				<h1 class="mx-auto text-2xl">10.10.0</h1>
 				<label>

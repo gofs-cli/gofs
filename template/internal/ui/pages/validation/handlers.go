@@ -1,8 +1,8 @@
-package handlers
+package validation
 
 import "net/http"
 
-func Validate() http.Handler {
+func HandleNameValidation() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := r.PostFormValue("name")
 		if name == "" {

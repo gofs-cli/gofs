@@ -1,15 +1,13 @@
-package components
+package toast
 
-type ToastVariant string
+const toastContainerID = "toast-container"
 
-const ToastContainerID = "toast-container"
-
-templ ToastContainer() {
-	<div id={ ToastContainerID } class="fixed left-1/2 top-5 z-toast mx-auto flex -translate-x-1/2 transform flex-col gap-4"></div>
+templ Container() {
+	<div id={ toastContainerID } class="fixed left-1/2 top-5 z-toast mx-auto flex -translate-x-1/2 transform flex-col gap-4"></div>
 }
 
-templ Toast() {
-	<div id={ ToastContainerID } hx-swap-oob="afterbegin">
+templ toast() {
+	<div id={ toastContainerID } hx-swap-oob="afterbegin">
 		<div
 			x-data="{
 					timeoutId: 0,
@@ -26,32 +24,32 @@ templ Toast() {
 	</div>
 }
 
-templ ToastSuccess(msg string) {
-	@Toast() {
+templ success(msg string) {
+	@toast() {
 		<div class="flex items-center rounded-md bg-green-500 px-4 py-2 text-white transition hover:bg-green-600">
 			<p class="font-bold">{ msg }</p>
 		</div>
 	}
 }
 
-templ ToastInfo(msg string) {
-	@Toast() {
+templ info(msg string) {
+	@toast() {
 		<div class="flex items-center rounded-md bg-sky-500 px-4 py-2 text-white transition hover:bg-sky-600">
 			<p class="font-bold">{ msg }</p>
 		</div>
 	}
 }
 
-templ ToastWarning(msg string) {
-	@Toast() {
+templ warning(msg string) {
+	@toast() {
 		<div class="flex items-center rounded-md bg-amber-500 px-4 py-2 text-white transition hover:bg-amber-600">
 			<p class="font-bold">{ msg }</p>
 		</div>
 	}
 }
 
-templ ToastError(msg string) {
-	@Toast() {
+templ err(msg string) {
+	@toast() {
 		<div class="flex items-center rounded-md bg-red-500 px-4 py-2 text-white transition hover:bg-red-600">
 			<p class="font-bold">{ msg }</p>
 		</div>

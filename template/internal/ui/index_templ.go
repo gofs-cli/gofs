@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"module/placeholder/internal/ui/components"
+	"module/placeholder/internal/ui/components/toast"
 	"module/placeholder/internal/ui/pages/validation"
 )
 
@@ -38,7 +39,7 @@ func Index() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.ToastContainer().Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = toast.Container().Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
