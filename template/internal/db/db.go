@@ -84,6 +84,9 @@ func CloudSQL(dsn, instanceConnectionName string) (DB, error) {
 }
 
 func MigrateTables(db DB) error {
+	if db.conn == nil {
+		return nil
+	}
 	files, _ := migrations.Dir.ReadDir(".")
 	for _, file := range files {
 		data, _ := migrations.Dir.ReadFile(file.Name())

@@ -2,7 +2,7 @@ $(shell cp -n .env.example .env)
 include .env
 export
 
-all: run
+all: templ run
 .PHONY: all
 
 run: dbup
