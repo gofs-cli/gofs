@@ -19,7 +19,7 @@ func (s *Server) Routes() {
 	// handlers for normal routes with all general middleware
 	routesMux := http.NewServeMux()
 	routesMux.Handle("GET /{$}", page.Index())
-	routesMux.Handle("GET /modal", handlers.ModalDemo())
+	routesMux.Handle("GET /modal", ui.Modal())
 
 	routesMux.Handle("GET /hello", http.HandlerFunc(hello))
 

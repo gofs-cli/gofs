@@ -2,6 +2,7 @@ package ui
 
 import (
 	"module/placeholder/internal/ui/components"
+	"module/placeholder/internal/ui/components/modal"
 	"module/placeholder/internal/ui/components/toast"
 	"module/placeholder/internal/ui/pages/validation"
 )
@@ -76,4 +77,16 @@ templ Index() {
 			</main>
 		</body>
 	</html>
+}
+
+templ ModalDemo() {
+	@modal.Modal() {
+		<div class="h-[150px] w-[200px] p-5">
+			<h2 class="text-lg">Demo Modal</h2>
+			<p>Modal content</p>
+			<button class="btn" @click="close">
+				Close
+			</button>
+		</div>
+	}
 }

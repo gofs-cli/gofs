@@ -7,9 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"module/placeholder/internal/app"
 	"module/placeholder/internal/config"
-	"module/placeholder/internal/dao"
 	"module/placeholder/internal/db"
 )
 
@@ -18,7 +16,6 @@ type Server struct {
 	srv     http.Server
 	conf    config.Config
 	db      db.DB
-	app     app.App
 	closeFn []func(context.Context) error
 }
 
@@ -43,7 +40,6 @@ func New(conf config.Config) (*Server, error) {
 	}
 	s.closeFn = append(s.closeFn, s.db.Close)
 
-	s.app = app.New(dao.New(s.db.Conn()))
 	return s, nil
 }
 
