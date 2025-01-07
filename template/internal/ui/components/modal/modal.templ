@@ -3,14 +3,11 @@ package modal
 templ Modal() {
 	<dialog
 		x-data="{ 
-			close() { $el.classList.add('closing'); },
-			forceclose() { $el.remove(); },
+			close() { $el.remove(); },
 		}"
 		x-init="$el.hasAttribute('open') ? $el.remove() : $el.showModal()"
-		@keydown.escape="forceclose"
-		@animationend="if ($el.classList.contains('closing')) $el.close(); $el.remove();"
+		@keydown.escape="close"
 		tabindex="-1"
-		class="overflow-visible rounded-lg border-2 border-solid border-black backdrop:bg-black/70 [&.closing]:animate-[zoomOut_200ms_ease-in-out]"
 	>
 		<div @click.outside="close">
 			{ children... }

@@ -3,7 +3,7 @@ package toast
 const toastContainerID = "toast-container"
 
 templ Container() {
-	<div id={ toastContainerID } class="fixed left-1/2 top-5 z-toast mx-auto flex -translate-x-1/2 transform flex-col gap-4"></div>
+	<div id={ toastContainerID }></div>
 }
 
 templ toast() {
@@ -11,13 +11,10 @@ templ toast() {
 		<div
 			x-data="{
 					timeoutId: 0,
-					// https://css-tricks.com/restart-css-animation/ workaround for re-triggering animation
-					close() { $el.classList.remove('opening'); void $el.offsetWidth; $el.classList.add('closing');}
+					close() { $el.remove();}
 			}"
 			x-init="timeoutId = setTimeout(() => { close() }, 5000);"
 			@click="clearTimeout(timeoutId); $el.remove();"
-			@animationend="if ($el.classList.contains('closing')) $el.remove();"
-			class="opening [&.closing]:animate-[bounceInDown_500ms_ease-out_reverse] [&.opening]:animate-[bounceInDown_500ms_ease-out]"
 		>
 			{ children... }
 		</div>
@@ -26,32 +23,32 @@ templ toast() {
 
 templ success(msg string) {
 	@toast() {
-		<div class="flex items-center rounded-md bg-green-500 px-4 py-2 text-white transition hover:bg-green-600">
-			<p class="font-bold">{ msg }</p>
+		<div>
+			<p>{ msg }</p>
 		</div>
 	}
 }
 
 templ info(msg string) {
 	@toast() {
-		<div class="flex items-center rounded-md bg-sky-500 px-4 py-2 text-white transition hover:bg-sky-600">
-			<p class="font-bold">{ msg }</p>
+		<div>
+			<p>{ msg }</p>
 		</div>
 	}
 }
 
 templ warning(msg string) {
 	@toast() {
-		<div class="flex items-center rounded-md bg-amber-500 px-4 py-2 text-white transition hover:bg-amber-600">
-			<p class="font-bold">{ msg }</p>
+		<div>
+			<p>{ msg }</p>
 		</div>
 	}
 }
 
 templ err(msg string) {
 	@toast() {
-		<div class="flex items-center rounded-md bg-red-500 px-4 py-2 text-white transition hover:bg-red-600">
-			<p class="font-bold">{ msg }</p>
+		<div>
+			<p>{ msg }</p>
 		</div>
 	}
 }

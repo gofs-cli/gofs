@@ -9,7 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/gofs-cli/gofs/template/internal/ui/components"
 	"github.com/gofs-cli/gofs/template/internal/ui/components/modal"
 	"github.com/gofs-cli/gofs/template/internal/ui/components/toast"
 	"github.com/gofs-cli/gofs/template/internal/ui/pages/validation"
@@ -36,7 +35,7 @@ func Index() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><meta charset=\"UTF-8\"><title>10.10.0</title><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><link rel=\"stylesheet\" href=\"/assets/css/styles.css\"><!-- HTMX Core --><script defer src=\"/assets/js/htmx.min.js\"></script><!-- HTMX Plugins --><script defer src=\"/assets/js/response-targets.js\"></script><!-- Alpine Plugins --><script defer src=\"https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js\"></script><script defer src=\"https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js\"></script><!-- Alpine Core --><script defer src=\"/assets/js/alpine.js\"></script><body hx-ext=\"response-targets\" hx-target-error=\"this\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><meta charset=\"UTF-8\"><title>gofs</title><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><link rel=\"stylesheet\" href=\"/assets/css/styles.css\"><!-- HTMX Core --><script defer src=\"/assets/js/htmx.min.js\"></script><!-- HTMX Plugins --><script defer src=\"/assets/js/response-targets.js\"></script><!-- Alpine Plugins --><script defer src=\"https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js\"></script><script defer src=\"https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js\"></script><!-- Alpine Core --><script defer src=\"/assets/js/alpine.js\"></script><body hx-ext=\"response-targets\" hx-target-error=\"this\"><script>0</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -44,11 +43,7 @@ func Index() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<main class=\"flex w-full flex-col\"><h1 class=\"mx-auto text-2xl\">10.10.0</h1><label><h2 class=\"text-lg\">Demo: Modal</h2><button class=\"btn\" hx-get=\"/modal\" hx-target=\"main\" hx-swap=\"afterbegin\">Open Modal</button></label><div class=\"flex flex-col\"><h2 class=\"text-lg\">Demo: Toast</h2><div class=\"flex gap-1\"><button class=\"btn\" hx-get=\"/toast-success\" hx-swap=\"none\">Success Toast</button> <button class=\"btn\" hx-get=\"/toast-info\" hx-swap=\"none\">Info Toast</button> <button class=\"btn\" hx-get=\"/toast-warning\" hx-swap=\"none\">Warning Toast</button> <button class=\"btn\" hx-get=\"/toast-error\" hx-swap=\"none\">Error Toast</button></div></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = components.Switch("toggle", "Toggle Me", templ.Attributes{}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<main><h1>gofs</h1><label><h2>Demo: Modal</h2><button hx-get=\"/modal\" hx-target=\"main\" hx-swap=\"afterbegin\">Open Modal</button></label><div><h2>Demo: Toast</h2><div><button hx-get=\"/toast-success\" hx-swap=\"none\">Success Toast</button> <button hx-get=\"/toast-info\" hx-swap=\"none\">Info Toast</button> <button hx-get=\"/toast-warning\" hx-swap=\"none\">Warning Toast</button> <button hx-get=\"/toast-error\" hx-swap=\"none\">Error Toast</button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -97,7 +92,7 @@ func ModalDemo() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"h-[150px] w-[200px] p-5\"><h2 class=\"text-lg\">Demo Modal</h2><p>Modal content</p><button class=\"btn\" @click=\"close\">Close</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div><h2>Demo Modal</h2><p>Modal content</p><button @click=\"close\">Close</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

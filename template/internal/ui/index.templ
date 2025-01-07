@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"github.com/gofs-cli/gofs/template/internal/ui/components"
 	"github.com/gofs-cli/gofs/template/internal/ui/components/modal"
 	"github.com/gofs-cli/gofs/template/internal/ui/components/toast"
 	"github.com/gofs-cli/gofs/template/internal/ui/pages/validation"
@@ -11,7 +10,7 @@ templ Index() {
 	<!DOCTYPE html>
 	<html lang="en">
 		<meta charset="UTF-8"/>
-		<title>10.10.0</title>
+		<title>gofs</title>
 		<meta name="viewport" content="width=device-width,initial-scale=1"/>
 		<link rel="stylesheet" href="/assets/css/styles.css"/>
 		<!-- HTMX Core -->
@@ -27,44 +26,41 @@ templ Index() {
 		// when an API request fails. This is a more declarative way to handle errors than using JavaScript.
 		// https://github.com/bigskysoftware/htmx-extensions/blob/main/src/response-targets/README.md
 		<body hx-ext="response-targets" hx-target-error="this">
+			// FF FOUC fix
+			<script>0</script>
 			@toast.Container()
-			<main class="flex w-full flex-col">
-				<h1 class="mx-auto text-2xl">10.10.0</h1>
+			<main>
+				<h1>gofs</h1>
 				<label>
-					<h2 class="text-lg">Demo: Modal</h2>
+					<h2>Demo: Modal</h2>
 					<button
-						class="btn"
 						hx-get="/modal"
 						hx-target="main"
 						hx-swap="afterbegin"
 					>Open Modal</button>
 				</label>
-				<div class="flex flex-col">
-					<h2 class="text-lg">Demo: Toast</h2>
-					<div class="flex gap-1">
+				<div>
+					<h2>Demo: Toast</h2>
+					<div>
 						<button
-							class="btn"
 							hx-get="/toast-success"
 							hx-swap="none"
 						>
 							Success Toast
 						</button>
 						<button
-							class="btn"
 							hx-get="/toast-info"
 							hx-swap="none"
 						>
 							Info Toast
 						</button>
 						<button
-							class="btn"
 							hx-get="/toast-warning"
 							hx-swap="none"
 						>
 							Warning Toast
 						</button>
 						<button
-							class="btn"
 							hx-get="/toast-error"
 							hx-swap="none"
 						>
@@ -72,7 +68,6 @@ templ Index() {
 						</button>
 					</div>
 				</div>
-				@components.Switch("toggle", "Toggle Me", templ.Attributes{})
 				@validation.TextInput()
 			</main>
 		</body>
@@ -81,10 +76,10 @@ templ Index() {
 
 templ ModalDemo() {
 	@modal.Modal() {
-		<div class="h-[150px] w-[200px] p-5">
-			<h2 class="text-lg">Demo Modal</h2>
+		<div>
+			<h2>Demo Modal</h2>
 			<p>Modal content</p>
-			<button class="btn" @click="close">
+			<button @click="close">
 				Close
 			</button>
 		</div>
