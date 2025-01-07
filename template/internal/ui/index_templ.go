@@ -9,10 +9,10 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"module/placeholder/internal/ui/components"
-	"module/placeholder/internal/ui/components/modal"
-	"module/placeholder/internal/ui/components/toast"
-	"module/placeholder/internal/ui/pages/validation"
+	"github.com/gofs-cli/gofs/template/internal/ui/components"
+	"github.com/gofs-cli/gofs/template/internal/ui/components/modal"
+	"github.com/gofs-cli/gofs/template/internal/ui/components/toast"
+	"github.com/gofs-cli/gofs/template/internal/ui/pages/validation"
 )
 
 func Index() templ.Component {
