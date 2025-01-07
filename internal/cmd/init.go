@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	folder "github.com/gofs-cli/gofs/template"
+	folder "github.com/gofs-cli/template"
 
 	"github.com/gofs-cli/gofs/internal/gen"
 )
