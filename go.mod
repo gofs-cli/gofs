@@ -4,8 +4,9 @@ go 1.23.0
 
 require (
 	github.com/a-h/templ v0.3.819
-	golang.org/x/mod v0.20.0
-	golang.org/x/tools v0.24.0
+	github.com/gofs-cli/gofs/template v0.0.0-20250107132201-a491e8995f6f
+	golang.org/x/mod v0.22.0
+	golang.org/x/tools v0.29.0
 )
 
 require github.com/a-h/parse v0.0.0-20240121214402-3caf7543159a // indirect
