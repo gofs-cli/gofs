@@ -5,8 +5,8 @@
 ## Installation
 
 ```bash
-git clone git@github.com:gofs-cli/go-fs.git
-cd go-fs
+git clone git@github.com:gofs-cli/gofs.git
+cd gofs
 go mod tidy
 go install
 ```
