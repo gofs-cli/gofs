@@ -3,7 +3,7 @@ package ui
 import (
 	"net/http"
 
-	"module/placeholder/internal/ui/components/toast"
+	"github.com/gofs-cli/gofs/template/internal/ui/components/toast"
 
 	"github.com/a-h/templ"
 )

@@ -1,6 +1,6 @@
 # gofs (Golang Full Stack)
 
-`gofs` is a 10100 CLI tool to generate opinionated secure projects
+`gofs` is a CLI tool to generate opinionated secure projects
 
 ## Installation
 

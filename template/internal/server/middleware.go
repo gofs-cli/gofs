@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"slices"
 
-	"module/placeholder/internal/auth"
+	"github.com/gofs-cli/gofs/template/internal/auth"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"

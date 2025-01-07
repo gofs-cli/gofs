@@ -1,4 +1,4 @@
-module module/placeholder
+module github.com/gofs-cli/gofs/template
 
 go 1.23.0
 

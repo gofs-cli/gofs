@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"module/placeholder/internal/config"
-	"module/placeholder/internal/server"
+	"github.com/gofs-cli/gofs/template/internal/config"
+	"github.com/gofs-cli/gofs/template/internal/server"
 )
 
 func main() {

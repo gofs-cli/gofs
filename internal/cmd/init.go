@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	folder "module/placeholder"
 	"os"
+
+	folder "github.com/gofs-cli/gofs/template"
 
 	"github.com/gofs-cli/gofs/internal/gen"
 )
 
 const (
 	root              = "template"
-	defaultModuleName = "module/placeholder"
+	defaultModuleName = "github.com/gofs-cli/gofs/template"
 )
 
 const initUsage = `usage: gofs init [module-name] [dir]

@@ -1,8 +1,9 @@
 package page
 
 import (
-	"module/placeholder/internal/ui"
 	"net/http"
+
+	"github.com/gofs-cli/gofs/template/internal/ui"
 
 	"github.com/a-h/templ"
 )

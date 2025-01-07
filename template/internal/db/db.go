@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"module/placeholder/internal/db/migrations"
+	"github.com/gofs-cli/gofs/template/internal/db/migrations"
 )
 
 type DB struct {

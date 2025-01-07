@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"module/placeholder/internal/config"
-	"module/placeholder/internal/db"
+	"github.com/gofs-cli/gofs/template/internal/config"
+	"github.com/gofs-cli/gofs/template/internal/db"
 )
 
 func TestGenData(t *testing.T) {

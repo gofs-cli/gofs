@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"module/placeholder/internal/config"
+	"github.com/gofs-cli/gofs/template/internal/config"
 )
 
 type contextKey string

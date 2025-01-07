@@ -3,11 +3,11 @@ package server
 import (
 	"net/http"
 
-	"module/placeholder/internal/server/assets"
-	"module/placeholder/internal/server/handlers"
-	"module/placeholder/internal/server/handlers/page"
-	"module/placeholder/internal/ui"
-	"module/placeholder/internal/ui/pages/validation"
+	"github.com/gofs-cli/gofs/template/internal/server/assets"
+	"github.com/gofs-cli/gofs/template/internal/server/handlers"
+	"github.com/gofs-cli/gofs/template/internal/server/handlers/page"
+	"github.com/gofs-cli/gofs/template/internal/ui"
+	"github.com/gofs-cli/gofs/template/internal/ui/pages/validation"
 )
 
 func (s *Server) Routes() {
