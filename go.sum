@@ -2,8 +2,8 @@ github.com/a-h/parse v0.0.0-20240121214402-3caf7543159a h1:vlmAfVwFK9sRpDlJyuHY8
 github.com/a-h/parse v0.0.0-20240121214402-3caf7543159a/go.mod h1:3mnrkvGpurZ4ZrTDbYU84xhwXW2TjTKShSwjRi2ihfQ=
 github.com/a-h/templ v0.3.819 h1:KDJ5jTFN15FyJnmSmo2gNirIqt7hfvBD2VXVDTySckM=
 github.com/a-h/templ v0.3.819/go.mod h1:iDJKJktpttVKdWoTkRNNLcllRI+BlpopJc+8au3gOUo=
-github.com/gofs-cli/template v1.0.3 h1:1TO8YHUr7uAyAWjBSu3hEPsflzJ4j7vJYwPh5WAdx7Q=
-github.com/gofs-cli/template v1.0.3/go.mod h1:a+CmQh1e+co2I7fenOWwn2+lK64rU/71QIXhlIPx59s=
+github.com/gofs-cli/template v1.0.4 h1:zlJKJG69kbJpeY8sCp/LJQOiwnHf1PkYGtcAfc8d5os=
+github.com/gofs-cli/template v1.0.4/go.mod h1:a+CmQh1e+co2I7fenOWwn2+lK64rU/71QIXhlIPx59s=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 golang.org/x/mod v0.22.0 h1:D4nJWe9zXqHOmWqj4VMOJhvzj7bEZg4wEYa759z1pH4=

@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/a-h/templ v0.3.819
-	github.com/gofs-cli/template v1.0.3
+	github.com/gofs-cli/template v1.0.4
 	golang.org/x/mod v0.22.0
 	golang.org/x/tools v0.29.0
 )
