@@ -11,7 +11,7 @@ import (
 
 const (
 	root              = "template"
-	defaultModuleName = "github.com/gofs-cli/gofs/template"
+	defaultModuleName = "github.com/gofs-cli/template"
 )
 
 const initUsage = `usage: gofs init [module-name] [dir]
