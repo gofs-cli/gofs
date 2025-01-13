@@ -20,6 +20,8 @@ import (
 	"github.com/gofs-cli/gofs/internal/vscode"
 )
 
+const ModuleName = "github.com/gofs-cli/template"
+
 type Parser struct {
 	// DirPath is the path to the folder to parse.
 	// This should be a directory containing the go files to parse.
@@ -195,7 +197,7 @@ func (p *Parser) updateTempl(path string, file fs.File) error {
 		case templParser.TemplateFileGoExpression:
 			if strings.HasPrefix(n.Expression.Value, "import") {
 				node := n
-				node.Expression.Value = strings.ReplaceAll(node.Expression.Value, p.CurrentModName, p.NewModName)
+				node.Expression.Value = strings.ReplaceAll(node.Expression.Value, ModuleName, p.NewModName)
 				t.Nodes[i] = node
 			}
 		}
