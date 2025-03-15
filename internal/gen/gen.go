@@ -3,6 +3,7 @@ package gen
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"go/format"
 	"go/parser"
 	"go/token"
@@ -27,15 +28,33 @@ type Parser struct {
 	CurrentModName string
 	NewModName     string
 	Template       embed.FS
+	TemplateRoot   string
 }
 
-func NewParser(dirPath, defaultModuleName, newModuleName string, template embed.FS) *Parser {
+func NewParser(dirPath, defaultModuleName, newModuleName string, template embed.FS) (*Parser, error) {
+	// Return an error if the directory is already contains a .gofs folder. Do not overwrite.
+	if _, err := os.Stat(filepath.Join(dirPath, ".gofs")); !os.IsNotExist(err) {
+		return nil, errors.New("gofs already initialized")
+	}
+
+	// If the directory already contains a go module, only create the .gofs folder. Do not overwrite the go module.
+	if _, err := os.Stat(filepath.Join(dirPath, "go.mod")); !os.IsNotExist(err) {
+		return &Parser{
+			DirPath:        dirPath,
+			CurrentModName: defaultModuleName,
+			NewModName:     newModuleName,
+			Template:       template,
+			TemplateRoot:   ".gofs",
+		}, nil
+	}
+
 	return &Parser{
 		DirPath:        dirPath,
 		CurrentModName: defaultModuleName,
 		NewModName:     newModuleName,
 		Template:       template,
-	}
+		TemplateRoot:   ".",
+	}, nil
 }
 
 func (p Parser) copyFile(path string, src fs.File) error {
@@ -50,7 +69,7 @@ func (p Parser) copyFile(path string, src fs.File) error {
 }
 
 func (p *Parser) Parse() error {
-	return fs.WalkDir(p.Template, ".", func(path string, d fs.DirEntry, err error) error {
+	return fs.WalkDir(p.Template, p.TemplateRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
