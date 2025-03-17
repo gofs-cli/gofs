@@ -64,6 +64,10 @@ func cmdInit() {
 		return
 	}
 
-	parser := gen.NewParser(dir, defaultModuleName, moduleName, folder.Folder)
+	parser, err := gen.NewParser(dir, defaultModuleName, moduleName, folder.Folder)
+	if err != nil {
+		fmt.Println("init: ", err)
+		return
+	}
 	parser.Parse()
 }
