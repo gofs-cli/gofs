@@ -1,8 +1,22 @@
-# gofs (Golang Full Stack)
+![gofs logo](/logo/gofs.svg)
 
-`gofs` is a CLI tool to generate opinionated secure projects
+# gofs (Go Full Stack)
+
+Lightweight templates for secure full-stack go apps.
+
+## Documentation
+
+Developer documentation is available here https://gofs.dev
 
 ## Installation
+
+With Go 1.23 or greater installed, run:
+
+```bash
+go install github.com/gofs-cli/gofs@latest
+```
+
+Or from source:
 
 ```bash
 git clone git@github.com:gofs-cli/gofs.git
@@ -20,10 +34,6 @@ gofs
 ## Current Status
 
 In development but used in production at one of europe's largest tech companies.
-
-## Features + Roadmap
-
-Full docs site coming soon
 
 ## Using generated templates
 

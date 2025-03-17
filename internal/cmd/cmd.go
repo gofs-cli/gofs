@@ -89,7 +89,9 @@ func (c *Cli) cmdHelp() {
 // always exits the program with status code 0
 func (c *Cli) usage() {
 	msg := `{{ .long }}
-	
+
+See docs at https://gofs.dev
+
 Usage:
 
 	{{ .name }} <command> [arguments]
