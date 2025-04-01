@@ -1,4 +1,4 @@
-![gofs logo](/logo/gofs.svg)
+![gofs logo](/docs/gofs.svg)
 
 # gofs (Go Full Stack)
 
@@ -6,7 +6,7 @@ Lightweight templates for secure full-stack go apps.
 
 ## Documentation
 
-Developer documentation is available here https://gofs.dev
+Developer documentation is available here [https://gofs.dev](https://gofs.dev).
 
 ## Installation
 
