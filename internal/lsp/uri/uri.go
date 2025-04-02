@@ -19,7 +19,7 @@ import (
 //
 // Go route matches longest path first
 
-var isValidUriChars = regexp.MustCompile(`^[A-Za-z\-\_\.\~\{\}\*]+$`).MatchString
+var isValidUriChars = regexp.MustCompile(`^[A-Za-z0-9\-\_\.\~\{\}\*]+$`).MatchString
 
 type Uri struct {
 	Verb string
