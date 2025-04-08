@@ -14,7 +14,7 @@ import (
 
 func DidOpen(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
+		item := Item{Id: uuid.NewString()}
 		r.AccessQueue.Add(item)
 		defer r.AccessQueue.Remove(item)
 
@@ -27,6 +27,9 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidOpenRequest: %s", err)
 			return
 		}
+
+		r.AccessQueue.AwaitUnblock(item)
+
 		// only support opening templ files
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.OpenTemplFile(*t)
@@ -36,7 +39,7 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 
 func DidChange(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
+		item := Item{Id: uuid.NewString()}
 		r.AccessQueue.Add(item)
 		defer r.AccessQueue.Remove(item)
 
@@ -49,6 +52,9 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidChangeRequest: %s", err)
 			return
 		}
+
+		r.AccessQueue.AwaitUnblock(item)
+
 		// replace templ file content
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.ChangeTemplFile(*t)
@@ -65,7 +71,7 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 
 func DidClose(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
+		item := Item{Id: uuid.NewString()}
 		r.AccessQueue.Add(item)
 		defer r.AccessQueue.Remove(item)
 
@@ -78,6 +84,9 @@ func DidClose(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidCloseRequest: %s", err)
 			return
 		}
+
+		r.AccessQueue.AwaitUnblock(item)
+
 		if filepath.Ext(t.TextDocument.Path) != ".templ" {
 			return
 		}

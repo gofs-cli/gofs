@@ -4,11 +4,6 @@ import (
 	"sync"
 )
 
-const (
-	ACTION_DIAGNOSTIC = "diagnostic"
-	ACTION_EDIT       = "edit"
-)
-
 // AccessQueue tracks the order of requests to read/update a repo in order to prevent
 // diagnostics from accessing data until the related edits have been performed.
 type AccessQueue struct {
@@ -17,21 +12,13 @@ type AccessQueue struct {
 }
 
 type Item struct {
-	Id     string
-	Action string
+	Id string
 }
 
 func (a *AccessQueue) AwaitUnblock(item Item) {
-	if item.Action != ACTION_DIAGNOSTIC {
-		return
-	}
 	for {
-		for _, queueItem := range a.Items {
-			if queueItem.Action == ACTION_EDIT {
-				break
-			} else if queueItem.Id == item.Id {
-				return
-			}
+		if len(a.Items) == 0 || a.Items[0].Id == item.Id {
+			return
 		}
 	}
 }

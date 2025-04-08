@@ -16,7 +16,7 @@ import (
 
 func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := repo.Item{Id: uuid.NewString(), Action: repo.ACTION_DIAGNOSTIC}
+		item := repo.Item{Id: uuid.NewString()}
 		r.AccessQueue.Add(item)
 		defer r.AccessQueue.Remove(item)
 
@@ -38,7 +38,6 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 
 		diagnostics := make([]DiagnosticResponse, 0)
 
-		// diagnostic must wait for edits ahead of it in the queue
 		r.AccessQueue.AwaitUnblock(item)
 
 		if path.Base(p.TextDocument.Path) == "routes.go" {
