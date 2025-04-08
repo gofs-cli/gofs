@@ -14,10 +14,9 @@ import (
 
 func DidOpen(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString(), Action: "edit"}
-		r.Queue.AddToQueue(item)
-		defer r.Queue.RemoveFromQueue(item)
-		log.Println("starting open")
+		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
+		r.AccessQueue.AddToQueue(item)
+		defer r.AccessQueue.RemoveFromQueue(item)
 
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
@@ -29,23 +28,18 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 			return
 		}
 
-		log.Println("got open params")
-
 		// only support opening templ files
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.OpenTemplFile(*t)
 		}
-
-		log.Println("finished open")
 	}
 }
 
 func DidChange(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString(), Action: "edit"}
-		r.Queue.AddToQueue(item)
-		defer r.Queue.RemoveFromQueue(item)
-		log.Println("starting change")
+		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
+		r.AccessQueue.AddToQueue(item)
+		defer r.AccessQueue.RemoveFromQueue(item)
 
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
@@ -57,19 +51,15 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 			return
 		}
 
-		log.Println("got change params")
-
 		// replace templ file content
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.ChangeTemplFile(*t)
-			log.Println("finished change")
 			return
 		}
 		// else check if routes file changed
 		if path.Base(t.TextDocument.Path) == "routes.go" {
 			b := []byte(t.ContentChanges[0].Text)
 			r.UpdateRoutes(b)
-			log.Println("finished change")
 			return
 		}
 	}
@@ -77,9 +67,10 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 
 func DidClose(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString(), Action: "edit"}
-		r.Queue.AddToQueue(item)
-		defer r.Queue.RemoveFromQueue(item)
+		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
+		r.AccessQueue.AddToQueue(item)
+		defer r.AccessQueue.RemoveFromQueue(item)
+
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return

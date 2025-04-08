@@ -21,7 +21,7 @@ type Repo struct {
 	RootPath      string
 	HasGofsConfig bool
 	Module        string
-	Queue         Queue
+	AccessQueue   AccessQueue
 	rt            routesFile.Routes     // routes file
 	ot            []templFile.TemplFile // open templ files
 	pkgs          map[string]pkg.Pkg    // loaded packages
