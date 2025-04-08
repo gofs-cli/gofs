@@ -9,7 +9,7 @@ const (
 	ACTION_EDIT       = "edit"
 )
 
-// AccessQueue tracks handlers wishing to read/update a repo in order to prevent
+// AccessQueue tracks the order of requests to read/update a repo in order to prevent
 // diagnostics from accessing data until the related edits have been performed.
 type AccessQueue struct {
 	Items []Item
