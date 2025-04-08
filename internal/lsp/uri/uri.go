@@ -11,13 +11,12 @@ import (
 	"github.com/gofs-cli/gofs/internal/lsp/model"
 )
 
-// Go router matching rules
-// / matches root
-// /{$} matches any after
-// /foo matches /foo exactly
-// /foo/{$} matches /foo/ with trailing slash and any after
-//
-// Go route matches longest path first
+// Go router matching rules:
+// "/" matches only the root
+// "/{$}" matches anything starting from root (e.g., "/foo", "/bar/baz")
+// "/foo" matches "/foo" exactly (no trailing slash)
+// "/foo/{$}" matches "/foo/" and any subpath (e.g., "/foo/bar", "/foo/bar/baz")
+// Go route matching uses longest path match first (most specific route wins)
 
 var isValidUriChars = regexp.MustCompile(`^[A-Za-z0-9\-\_\.\~\{\}\*]+$`).MatchString
 
@@ -76,6 +75,7 @@ func Segments(pattern string) ([]string, []model.Diag) {
 		// - selector expressions e.g. my.Var
 		// - binary expressions e.g. "/foo" + "/bar"
 		// - function calls e.g. fmt.Sprintf("/foo/%s", someVar)
+		// - wildcard e.g. "{$}"
 		switch x := n.(type) {
 		case *ast.BasicLit:
 			hasLit = true
@@ -149,7 +149,17 @@ func LiteralSegments(pattern string) ([]string, []model.Diag) {
 
 	parts := strings.Split(trimmed, "/")
 	seg, diag := make([]string, 0), make([]model.Diag, 0)
-	for _, p := range parts {
+	for i, p := range parts {
+		if p == "{$}" {
+			if i != 0 {
+				diag = append(diag, model.Diag{
+					Severity: model.SeverityError,
+					Message:  fmt.Sprintf("invalid route pattern %s: {$} is only allowed at the root path", p),
+				})
+			}
+			seg = append(seg, "{$}")
+			continue
+		}
 		if strings.HasPrefix(p, "%") || // variable in Sprintf
 			strings.HasPrefix(p, "*") || // wildcard in route
 			strings.HasPrefix(p, "{") { // variable in route
@@ -203,6 +213,11 @@ func (u *Uri) IsMatch(uri Uri) bool {
 		return false
 	}
 
+	// "/{$}" catch-all route starting from root
+	if len(uri.Seg) == 1 && uri.Seg[0] == "{$}" {
+		return true
+	}
+
 	// segments must match allowing for variables
 	for i, s := range uri.Seg {
 		if s == "{}" || u.Seg[i] == "{}" {
@@ -212,6 +227,12 @@ func (u *Uri) IsMatch(uri Uri) bool {
 			// route has a wildcard so it can match any segment
 			continue
 		}
+
+		// "{$}" is only allowed at the root path
+		if s == "{$}" {
+			return false
+		}
+
 		if u.Seg[i] != s {
 			return false
 		}
