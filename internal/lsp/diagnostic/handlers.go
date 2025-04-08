@@ -17,8 +17,8 @@ import (
 func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
 		item := repo.Item{Id: uuid.NewString(), Action: repo.ACTION_DIAGNOSTIC}
-		r.AccessQueue.AddToQueue(item)
-		defer r.AccessQueue.RemoveFromQueue(item)
+		r.AccessQueue.Add(item)
+		defer r.AccessQueue.Remove(item)
 
 		// only support valid gofs repos
 		if !r.IsValidGofs() {

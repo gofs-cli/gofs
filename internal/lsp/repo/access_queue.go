@@ -36,14 +36,14 @@ func (a *AccessQueue) AwaitUnblock(item Item) {
 	}
 }
 
-func (a *AccessQueue) AddToQueue(item Item) {
+func (a *AccessQueue) Add(item Item) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
 	a.Items = append(a.Items, item)
 }
 
-func (a *AccessQueue) RemoveFromQueue(item Item) {
+func (a *AccessQueue) Remove(item Item) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 

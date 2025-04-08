@@ -15,8 +15,8 @@ import (
 func DidOpen(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
 		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
-		r.AccessQueue.AddToQueue(item)
-		defer r.AccessQueue.RemoveFromQueue(item)
+		r.AccessQueue.Add(item)
+		defer r.AccessQueue.Remove(item)
 
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
@@ -37,8 +37,8 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 func DidChange(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
 		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
-		r.AccessQueue.AddToQueue(item)
-		defer r.AccessQueue.RemoveFromQueue(item)
+		r.AccessQueue.Add(item)
+		defer r.AccessQueue.Remove(item)
 
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
@@ -66,8 +66,8 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 func DidClose(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
 		item := Item{Id: uuid.NewString(), Action: ACTION_EDIT}
-		r.AccessQueue.AddToQueue(item)
-		defer r.AccessQueue.RemoveFromQueue(item)
+		r.AccessQueue.Add(item)
+		defer r.AccessQueue.Remove(item)
 
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
