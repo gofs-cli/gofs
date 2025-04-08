@@ -49,7 +49,6 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidChangeRequest: %s", err)
 			return
 		}
-
 		// replace templ file content
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.ChangeTemplFile(*t)
