@@ -69,67 +69,7 @@ func Segments(pattern string) ([]string, []model.Diag) {
 	hasLit := false
 	hasCall := false
 	ast.Inspect(expr, func(n ast.Node) bool {
-		// there should only be
-		// - basic literals e.g "/foo"
-		// - identifiers e.g. someVar
-		// - selector expressions e.g. my.Var
-		// - binary expressions e.g. "/foo" + "/bar"
-		// - function calls e.g. fmt.Sprintf("/foo/%s", someVar)
-		// - wildcard e.g. "{$}"
-		switch x := n.(type) {
-		case *ast.BasicLit:
-			hasLit = true
-			s, d := LiteralSegments(x.Value)
-			seg = append(seg, s...)
-			diag = append(diag, d...)
-			// nothing to recurse
-			return false
-		case *ast.Ident:
-			// add the variable
-			seg = append(seg, "{}")
-			// nothing to recurse
-			return false
-		case *ast.SelectorExpr:
-			// add the variable
-			seg = append(seg, "{}")
-			// nothing to recurse
-			return false
-		case *ast.BinaryExpr:
-			// traverse the binary expression
-			return true
-		case *ast.CallExpr:
-			hasCall = true
-			call := make([]string, 0)
-			ast.Inspect(x.Fun, func(n ast.Node) bool {
-				if y, ok := n.(*ast.SelectorExpr); ok {
-					call = append(call, y.Sel.Name)
-				}
-				return true
-			})
-			if !slices.Contains(call, "Sprintf") {
-				diag = append(diag, model.Diag{
-					Severity: model.SeverityWarning,
-					Message:  fmt.Sprintf("unexpected function call %s, use Sprintf instead", strings.Join(call, ".")),
-				})
-				return false
-			}
-			for _, arg := range x.Args {
-				if fArg, ok := arg.(*ast.BasicLit); ok {
-					s, d := LiteralSegments(fArg.Value)
-					seg = append(seg, s...)
-					diag = append(diag, d...)
-				}
-			}
-			return false
-		case nil:
-			return false
-		}
-		// we should not encounter any other types, so do nothing
-		diag = append(diag, model.Diag{
-			Severity: model.SeverityError,
-			Message:  fmt.Sprintf("unexpected code: %T", n),
-		})
-		return false
+		return handleNodeType(n, &hasLit, &hasCall, &seg, &diag)
 	})
 
 	if hasLit && hasCall {
@@ -139,6 +79,76 @@ func Segments(pattern string) ([]string, []model.Diag) {
 		})
 	}
 	return seg, diag
+}
+
+func handleNodeType(n ast.Node,
+	hasLit *bool,
+	hasCall *bool,
+	seg *[]string,
+	diag *[]model.Diag,
+) bool {
+	// there should only be
+	// - basic literals e.g "/foo"
+	// - identifiers e.g. someVar
+	// - selector expressions e.g. my.Var
+	// - binary expressions e.g. "/foo" + "/bar"
+	// - function calls e.g. fmt.Sprintf("/foo/%s", someVar)
+	// - wildcard e.g. "{$}"
+	
+	switch x := n.(type) {
+	case *ast.BasicLit:
+		*hasLit = true
+		s, d := LiteralSegments(x.Value)
+		*seg = append(*seg, s...)
+		*diag = append(*diag, d...)
+		// nothing to recurse
+		return false
+	case *ast.Ident:
+		// add the variable
+		*seg = append(*seg, "{}")
+		// nothing to recurse
+		return false
+	case *ast.SelectorExpr:
+		// add the variable
+		*seg = append(*seg, "{}")
+		// nothing to recurse
+		return false
+	case *ast.BinaryExpr:
+		// traverse the binary expression
+		return true
+	case *ast.CallExpr:
+		*hasCall = true
+		call := make([]string, 0)
+		ast.Inspect(x.Fun, func(n ast.Node) bool {
+			if y, ok := n.(*ast.SelectorExpr); ok {
+				call = append(call, y.Sel.Name)
+			}
+			return true
+		})
+		if !slices.Contains(call, "Sprintf") {
+			*diag = append(*diag, model.Diag{
+				Severity: model.SeverityWarning,
+				Message:  fmt.Sprintf("unexpected function call %s, use Sprintf instead", strings.Join(call, ".")),
+			})
+			return false
+		}
+		for _, arg := range x.Args {
+			if fArg, ok := arg.(*ast.BasicLit); ok {
+				s, d := LiteralSegments(fArg.Value)
+				*seg = append(*seg, s...)
+				*diag = append(*diag, d...)
+			}
+		}
+		return false
+	case nil:
+		return false
+	}
+
+	*diag = append(*diag, model.Diag{
+		Severity: model.SeverityError,
+		Message:  fmt.Sprintf("unexpected code: %T", n),
+	})
+	return false
 }
 
 func LiteralSegments(pattern string) ([]string, []model.Diag) {
