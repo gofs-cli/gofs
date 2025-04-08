@@ -4,8 +4,8 @@ import (
 	"sync"
 )
 
-// AccessQueue tracks the order of requests to read/update a repo in order to prevent
-// diagnostics from accessing data until the related edits have been performed.
+// AccessQueue tracks the order of requests to read/update to ensure that resources
+// are accessed in the correct order.
 type AccessQueue struct {
 	Items []Item
 	mutex sync.Mutex
