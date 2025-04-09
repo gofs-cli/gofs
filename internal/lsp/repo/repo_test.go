@@ -70,7 +70,7 @@ func testServer(c *jsonrpc2.Conn) *jsonrpc2.Server {
 func TestListenAndServe(t *testing.T) {
 	t.Parallel()
 
-	t.Run("server block while opening a file", func(t *testing.T) {
+	t.Run("handler block when it requires a file and didOpen is running", func(t *testing.T) {
 		initParams := json.RawMessage(`{"rootPath": "/foo/bar"}`)
 		reader := newTestReader([]protocol.Request{
 			{
@@ -144,6 +144,84 @@ func TestListenAndServe(t *testing.T) {
 		expected += "Content-Length: 69\r\n\r\n" + `{"jsonrpc":"2.0","id":3,"result":{"didOpen":"response"},"error":null}`
 		// foo second, should wait for didOpen to finish
 		expected += "Content-Length: 65\r\n\r\n" + `{"jsonrpc":"2.0","id":4,"result":{"foo":"response"},"error":null}`
+		// shutdown response
+		expected += "Content-Length: 51\r\n\r\n" + `{"jsonrpc":"2.0","id":5,"result":null,"error":null}`
+
+		if writer.String() != expected {
+			t.Errorf("expected:\n%v\ngot:\n%v", expected, writer.String())
+		}
+	})
+
+	t.Run("handler does not block when it does not require didOpen", func(t *testing.T) {
+		initParams := json.RawMessage(`{"rootPath": "/foo/bar"}`)
+		reader := newTestReader([]protocol.Request{
+			{
+				Version: "2.0",
+				Id:      1,
+				Method:  protocol.RequestInitialize,
+				Params:  &initParams,
+			},
+			{
+				Version: "2.0",
+				Id:      2,
+				Method:  protocol.NotificationInitialized,
+				Params:  nil,
+			},
+			{
+				Version: "2.0",
+				Id:      3,
+				Method:  "didOpen",
+				Params:  nil,
+			},
+			{
+				Version: "2.0",
+				Id:      4,
+				Method:  "foo", // foo should not be blocked by didOpen
+				Params:  nil,
+			},
+		})
+		writer := new(bytes.Buffer)
+		conn := jsonrpc2.NewConn(reader, writer)
+		s := testServer(conn)
+		r := NewRepo()
+		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) {
+			item := Item{Id: "didOpen"}
+			r.AccessQueue.Add(item)
+			defer r.AccessQueue.Remove(item)
+			r.AccessQueue.AwaitUnblock(item)
+			time.Sleep(100 * time.Millisecond)
+			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"didOpen": "response"}`))
+		})
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) {
+			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "response"}`))
+		})
+		go func() {
+			// give the handlers time to respond
+			time.Sleep(200 * time.Millisecond)
+			reader.addReq(protocol.Request{
+				Version: "2.0",
+				Id:      5,
+				Method:  protocol.RequestShutdown,
+				Params:  nil,
+			})
+			reader.addReq(protocol.Request{
+				Version: "2.0",
+				Id:      6,
+				Method:  protocol.NotificationExit,
+				Params:  nil,
+			})
+		}()
+		err := s.ListenAndServe()
+		if err != nil {
+			t.Error(err)
+		}
+
+		// init response
+		expected := "Content-Length: 206\r\n\r\n" + `{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":0,"hoverProvider":false,"diagnosticProvider":{"identifier":"","interFileDependencies":false,"workspaceDiagnostics":false}}},"error":null}`
+		// foo first, does not wait for didOpen
+		expected += "Content-Length: 65\r\n\r\n" + `{"jsonrpc":"2.0","id":4,"result":{"foo":"response"},"error":null}`
+		// didOpen finishes second
+		expected += "Content-Length: 69\r\n\r\n" + `{"jsonrpc":"2.0","id":3,"result":{"didOpen":"response"},"error":null}`
 		// shutdown response
 		expected += "Content-Length: 51\r\n\r\n" + `{"jsonrpc":"2.0","id":5,"result":null,"error":null}`
 
