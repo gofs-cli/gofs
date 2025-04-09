@@ -120,10 +120,13 @@ func (s *Server) ListenAndServe() error {
 
 		if s.handlers[request.Method] != nil {
 			ctx := s.startRequestWithContext(request.Id)
+			c := make(chan bool)
 			go func() {
+				c <- true
 				s.handlers[request.Method](ctx, responseQueue, *request)
 				s.endRequest(request.Id)
 			}()
+			<-c
 			continue
 		}
 
