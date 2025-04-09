@@ -207,7 +207,7 @@ func LiteralSegments(pattern string) ([]string, []model.Diag) {
 // hx-get={ foo }
 
 func (u *Uri) MatchLevel(uri Uri) int {
-	if uri.Verb != u.Verb || len(uri.Seg) == 0{
+	if uri.Verb != u.Verb || len(uri.Seg) == 0 {
 		// verb does not match
 		// no segments to match
 		return model.NoMatch
@@ -258,26 +258,4 @@ func (u *Uri) MatchLevel(uri Uri) int {
 	default:
 		return model.ExactMatch
 	}
-
-	// // segments must match allowing for variables
-	// for i, s := range uri.Seg {
-	// 	if s == "{}" || u.Seg[i] == "{}" {
-	// 		continue
-	// 	}
-	// 	if u.Seg[i] == "*" {
-	// 		// route has a wildcard so it can match any segment
-	// 		continue
-	// 	}
-
-	// 	// "{$}" is only allowed at the root path
-	// 	if s == "{$}" {
-	// 		return false
-	// 	}
-
-	// 	if u.Seg[i] != s {
-	// 		return false
-	// 	}
-	// }
-
-	// return true
 }

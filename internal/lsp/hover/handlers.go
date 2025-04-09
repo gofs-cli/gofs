@@ -60,14 +60,11 @@ func Hover(r *repo.Repo) jsonrpc2.Handler {
 
 		// uri has a route
 		route, _ := r.GetRoute(routeIndex)
-
 		links := fmt.Sprintf("[routes.go](%s/internal/server/routes.go#%v)", r.RootPath, route.Uri.From.Line+1)
-
 		handler := r.GetPkgFunc(route.Pkg, route.Handler.Call)
 		if handler != nil {
 			links += fmt.Sprintf(" | [%s](%s#%v)", route.Handler.Call, handler.File, handler.Pos.Line+1)
 		}
-
 		b, err := json.Marshal(HoverResponseMarkup{
 			Contents: protocol.MarkupContent{
 				Kind:  "markdown",
