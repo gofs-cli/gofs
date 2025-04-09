@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"golang.org/x/mod/modfile"
 
@@ -21,24 +22,22 @@ type Repo struct {
 	RootPath      string
 	HasGofsConfig bool
 	Module        string
-	AccessQueue   AccessQueue
-	rt            routesFile.Routes     // routes file
-	ot            []templFile.TemplFile // open templ files
-	pkgs          map[string]pkg.Pkg    // loaded packages
-	mutex         sync.Mutex
+	rt            routesFile.Routes  // routes file
+	ot            sync.Map           // open templ files
+	pkgs          map[string]pkg.Pkg // loaded packages
+	shouldLoad    sync.Map           // files that are being loaded or have loaded
 }
 
 func NewRepo() *Repo {
 	// open must be called first and creates the repo
 	return &Repo{
-		IsOpen: false,
+		IsOpen:     false,
+		ot:         sync.Map{},
+		shouldLoad: sync.Map{},
 	}
 }
 
 func (r *Repo) Open(rootPath string) error {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	r.RootPath = rootPath
 
 	// check if .gofs config folder exists
@@ -82,29 +81,23 @@ func (r *Repo) IsValidGofs() bool {
 }
 
 func (r *Repo) GetTemplFile(path string) *templFile.TemplFile {
-	if !r.IsOpen {
-		return nil
-	}
-
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	for _, templ := range r.ot {
-		if templ.Path == path {
-			return &templ
+	for {
+		// TODO add a counter to abort after n attempts
+		if templ, ok := r.ot.Load(path); ok {
+			t := templ.(templFile.TemplFile)
+			return &t
+		}
+		if _, ok := r.shouldLoad.Load(path); ok {
+			// the file is loading so wait
+			time.Sleep(100 * time.Millisecond)
+		} else {
+			// a request to load the file was not sent
+			return nil
 		}
 	}
-	return nil
 }
 
 func (r *Repo) GetPkgFunc(pkg, f string) *pkg.Func {
-	if !r.IsOpen {
-		return nil
-	}
-
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	if p, ok := r.pkgs[pkg]; ok {
 		return p.GetFunc(f)
 	}
@@ -112,17 +105,11 @@ func (r *Repo) GetPkgFunc(pkg, f string) *pkg.Func {
 }
 
 func (r *Repo) OpenTemplFile(req DidOpenRequest) {
-	if !r.IsOpen {
-		return
-	}
-
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
+	r.shouldLoad.Store(req.TextDocument.Path, true)
 	uris, err := templFile.GetTemplUris(req.TextDocument.Text)
 	if err != nil {
 		// create an empty entry if the file has parse errors
-		r.ot = append(r.ot, templFile.TemplFile{
+		r.ot.Store(req.TextDocument.Path, templFile.TemplFile{
 			Path:           req.TextDocument.Path,
 			Text:           req.TextDocument.Text,
 			Uris:           []uri.Uri{},
@@ -140,7 +127,8 @@ func (r *Repo) OpenTemplFile(req DidOpenRequest) {
 			})
 		}
 	}
-	r.ot = append(r.ot, templFile.TemplFile{
+
+	r.ot.Store(req.TextDocument.Path, templFile.TemplFile{
 		Path:           req.TextDocument.Path,
 		Text:           req.TextDocument.Text,
 		Uris:           uris,
@@ -149,65 +137,49 @@ func (r *Repo) OpenTemplFile(req DidOpenRequest) {
 }
 
 func (r *Repo) ChangeTemplFile(req DidChangeRequest) {
-	if !r.IsOpen {
-		return
-	}
-
 	if len(req.ContentChanges) == 0 {
 		return
 	}
 
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	for i, templ := range r.ot {
-		if templ.Path == req.TextDocument.Path {
-			// TODO handle multiple content changes, this works because client sends entire file
-			r.ot[i].Text = req.ContentChanges[0].Text
-			uris, err := templFile.GetTemplUris(req.ContentChanges[0].Text)
-			if err != nil {
-				return
-			}
-			uriRouteIndex := make([]int, len(uris))
-			for j := range uris {
-				uriRouteIndex[j] = r.rt.RouteIndex(uris[j])
-				if uriRouteIndex[j] == -1 {
-					uris[j].Diag = append(uris[j].Diag, model.Diag{
-						Severity: model.SeverityError,
-						Message:  "no route found for uri",
-					})
-				}
-			}
-			r.ot[i].Uris = uris
-			r.ot[i].UrisRouteIndex = uriRouteIndex
-			return
+	t := r.GetTemplFile(req.TextDocument.Path)
+	if t == nil {
+		return
+	}
+	uris, err := templFile.GetTemplUris(req.ContentChanges[0].Text)
+	if err != nil {
+		return
+	}
+	// TODO handle multiple content changes, this works because client sends entire file
+	t.Text = req.ContentChanges[0].Text
+	uriRouteIndex := make([]int, len(uris))
+	for j := range uris {
+		uriRouteIndex[j] = r.rt.RouteIndex(uris[j])
+		if uriRouteIndex[j] == -1 {
+			uris[j].Diag = append(uris[j].Diag, model.Diag{
+				Severity: model.SeverityError,
+				Message:  "no route found for uri",
+			})
 		}
 	}
+	t.Uris = uris
+	t.UrisRouteIndex = uriRouteIndex
+	r.ot.Store(req.TextDocument.Path, *t)
 }
 
 func (r *Repo) CloseTemplFile(req DidCloseRequest) {
-	if !r.IsOpen {
-		return
-	}
-
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	for i, templ := range r.ot {
-		if templ.Path == req.TextDocument.Path {
-			r.ot = append(r.ot[:i], r.ot[i+1:]...)
-			return
-		}
-	}
+	r.shouldLoad.Delete(req.TextDocument.Path)
+	r.ot.Delete(req.TextDocument.Path)
 }
 
 func (r *Repo) RecalculateTemplUrls() {
+	m := sync.Map{}
 	// can be called if the repo is not open
-	for i := range r.ot {
-		uris, err := templFile.GetTemplUris(r.ot[i].Text)
+	r.ot.Range(func(key, value any) bool {
+		t := value.(templFile.TemplFile)
+		uris, err := templFile.GetTemplUris(t.Text)
 		if err != nil {
 			log.Printf("error getting templ urls: %v", err.Error())
-			return
+			return true
 		}
 		uriRouteIndex := make([]int, len(uris))
 		for j := range uris {
@@ -219,9 +191,16 @@ func (r *Repo) RecalculateTemplUrls() {
 				})
 			}
 		}
-		r.ot[i].Uris = uris
-		r.ot[i].UrisRouteIndex = uriRouteIndex
-	}
+		t.Uris = uris
+		t.UrisRouteIndex = uriRouteIndex
+		m.Store(key, t)
+		return true
+	})
+	r.ot.Clear()
+	m.Range(func(key, value any) bool {
+		r.ot.Store(key, value)
+		return true
+	})
 }
 
 func (r *Repo) ReloadPkgs() {
@@ -247,22 +226,12 @@ func (r *Repo) UpdateRoutes(b []byte) {
 		return
 	}
 
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	r.rt.Update(b)
 	r.RecalculateTemplUrls()
 	r.ReloadPkgs()
 }
 
 func (r *Repo) Routes() []routesFile.Route {
-	if !r.IsOpen {
-		return nil
-	}
-
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	return r.rt.Routes()
 }
 

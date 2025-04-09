@@ -6,18 +6,12 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/google/uuid"
-
 	"github.com/gofs-cli/gofs/internal/lsp/jsonrpc2"
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
 
 func DidOpen(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString()}
-		r.AccessQueue.Add(item)
-		defer r.AccessQueue.Remove(item)
-
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return
@@ -28,8 +22,6 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 			return
 		}
 
-		r.AccessQueue.AwaitUnblock(item)
-
 		// only support opening templ files
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.OpenTemplFile(*t)
@@ -39,10 +31,6 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 
 func DidChange(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString()}
-		r.AccessQueue.Add(item)
-		defer r.AccessQueue.Remove(item)
-
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return
@@ -52,8 +40,6 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidChangeRequest: %s", err)
 			return
 		}
-
-		r.AccessQueue.AwaitUnblock(item)
 
 		// replace templ file content
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
@@ -71,10 +57,6 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 
 func DidClose(r *Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := Item{Id: uuid.NewString()}
-		r.AccessQueue.Add(item)
-		defer r.AccessQueue.Remove(item)
-
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return
@@ -84,8 +66,6 @@ func DidClose(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidCloseRequest: %s", err)
 			return
 		}
-
-		r.AccessQueue.AwaitUnblock(item)
 
 		if filepath.Ext(t.TextDocument.Path) != ".templ" {
 			return

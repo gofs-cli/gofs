@@ -7,8 +7,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/google/uuid"
-
 	"github.com/gofs-cli/gofs/internal/lsp/jsonrpc2"
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 	"github.com/gofs-cli/gofs/internal/lsp/repo"
@@ -16,10 +14,6 @@ import (
 
 func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
-		item := repo.Item{Id: uuid.NewString()}
-		r.AccessQueue.Add(item)
-		defer r.AccessQueue.Remove(item)
-
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			que <- protocol.NewEmptyResponse(req.Id, FullDiagnosticResponse{})
@@ -37,8 +31,6 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 		}
 
 		diagnostics := make([]DiagnosticResponse, 0)
-
-		r.AccessQueue.AwaitUnblock(item)
 
 		if path.Base(p.TextDocument.Path) == "routes.go" {
 			for _, route := range r.Routes() {
