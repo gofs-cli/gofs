@@ -94,7 +94,7 @@ func handleNodeType(n ast.Node,
 	// - binary expressions e.g. "/foo" + "/bar"
 	// - function calls e.g. fmt.Sprintf("/foo/%s", someVar)
 	// - wildcard e.g. "{$}"
-	
+
 	switch x := n.(type) {
 	case *ast.BasicLit:
 		*hasLit = true
@@ -206,47 +206,78 @@ func LiteralSegments(pattern string) ([]string, []model.Diag) {
 //           - route cannot be identified and any route is possible
 // hx-get={ foo }
 
-func (u *Uri) IsMatch(uri Uri) bool {
-	if uri.Verb != u.Verb {
+func (u *Uri) MatchLevel(uri Uri) int {
+	if uri.Verb != u.Verb || len(uri.Seg) == 0{
 		// verb does not match
-		return false
-	}
-
-	if len(uri.Seg) == 0 {
 		// no segments to match
-		return false
+		return model.NoMatch
 	}
 
 	// if there are different number of segments in the pattern than the uri, it cannot match
 	// i.e. /foo/bar cannot match /foo
 	if len(uri.Seg) != len(u.Seg) {
-		return false
+		return model.NoMatch
 	}
 
 	// "/{$}" catch-all route starting from root
 	if len(uri.Seg) == 1 && uri.Seg[0] == "{$}" {
-		return true
+		return model.WildcardMatch
 	}
 
-	// segments must match allowing for variables
+	// Exact match
+	if slices.Equal(u.Seg, uri.Seg) {
+		return model.ExactMatch
+	}
+
+	hasVar := false
+	hasWildcard := false
 	for i, s := range uri.Seg {
+		if s == "{$}" {
+			//"{$}" is only allowed at the root path
+			return model.NoMatch
+		}
+
 		if s == "{}" || u.Seg[i] == "{}" {
+			hasVar = true
 			continue
 		}
 		if u.Seg[i] == "*" {
-			// route has a wildcard so it can match any segment
+			hasWildcard = true
 			continue
 		}
-
-		// "{$}" is only allowed at the root path
-		if s == "{$}" {
-			return false
-		}
-
 		if u.Seg[i] != s {
-			return false
+			return model.NoMatch
 		}
 	}
 
-	return true
+	switch {
+	case hasWildcard:
+		return model.WildcardMatch
+	case hasVar:
+		return model.VariableMatch
+	default:
+		return model.ExactMatch
+	}
+
+	// // segments must match allowing for variables
+	// for i, s := range uri.Seg {
+	// 	if s == "{}" || u.Seg[i] == "{}" {
+	// 		continue
+	// 	}
+	// 	if u.Seg[i] == "*" {
+	// 		// route has a wildcard so it can match any segment
+	// 		continue
+	// 	}
+
+	// 	// "{$}" is only allowed at the root path
+	// 	if s == "{$}" {
+	// 		return false
+	// 	}
+
+	// 	if u.Seg[i] != s {
+	// 		return false
+	// 	}
+	// }
+
+	// return true
 }

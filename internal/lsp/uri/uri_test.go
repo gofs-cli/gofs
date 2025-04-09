@@ -263,146 +263,129 @@ func TestSegments(t *testing.T) {
 func TestIsMatch(t *testing.T) {
 	t.Parallel()
 
-	t.Run("root matches", func(t *testing.T) {
-		u := NewUri("GET", `"/"`)
-		if match := u.IsMatch(NewUri("GET", `"/"`)); !match {
-			t.Errorf("expected match")
-		}
-	})
-
-	t.Run("literal", func(t *testing.T) {
-		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/bar"`)); !match {
-			t.Errorf("expected match")
-		}
-		if match := u.IsMatch(NewUri("GET", `"/bar/foo"`)); match {
-			t.Errorf("expected not to match")
-		}
-	})
-
 	t.Run("literal binary opp", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo" + "/bar"`)); !match {
-			t.Errorf("expected match")
+		if match := u.MatchLevel(NewUri("GET", `"/foo" + "/bar"`)); match != model.ExactMatch {
+			t.Errorf("expected exact match")
 		}
-		if match := u.IsMatch(NewUri("GET", `"/bar" + "/foo"`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/bar" + "/foo"`)); match != model.NoMatch {
 			t.Errorf("expected not to match")
 		}
 	})
 
 	t.Run("binary opp with vars", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo" + someVar`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo" + someVar`)); match != model.VariableMatch {
 			t.Errorf("expected match")
 		}
-		if match := u.IsMatch(NewUri("GET", `"/bar" + someVar`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/bar" + someVar`)); match != model.NoMatch {
 			t.Errorf("expected not to match")
 		}
 	})
 
 	t.Run("call with vars", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `fmt.Sprintf("/foo/%s", someVar)`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `fmt.Sprintf("/foo/%s", someVar)`)); match != model.VariableMatch {
 			t.Errorf("expected match")
 		}
-		if match := u.IsMatch(NewUri("GET", `fmt.Sprintf("/bar/%s", someVar)`)); match {
+		if match := u.MatchLevel(NewUri("GET", `fmt.Sprintf("/bar/%s", someVar)`)); match != model.NoMatch {
 			t.Errorf("expected not to match")
 		}
 	})
 
 	t.Run("call with too many segs", func(t *testing.T) {
 		u := NewUri("GET", "/foo/bar")
-		if match := u.IsMatch(NewUri("GET", `fmt.Sprintf("/foo/bar/%s", someVar)`)); match {
+		if match := u.MatchLevel(NewUri("GET", `fmt.Sprintf("/foo/bar/%s", someVar)`)); match != model.NoMatch {
 			t.Errorf("expected not to match")
 		}
 	})
 
 	t.Run("call with var in middle", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar/foobar"`)
-		if match := u.IsMatch(NewUri("GET", `fmt.Sprintf("/foo/%s/foobar", someVar)`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `fmt.Sprintf("/foo/%s/foobar", someVar)`)); match != model.VariableMatch {
 			t.Errorf("expected to match")
 		}
-		if match := u.IsMatch(NewUri("GET", `fmt.Sprintf("/foo/%s/foo", someVar)`)); match {
+		if match := u.MatchLevel(NewUri("GET", `fmt.Sprintf("/foo/%s/foo", someVar)`)); match != model.NoMatch {
 			t.Errorf("expected not to match")
 		}
 	})
 
 	t.Run("different verbs no match", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("POST", `"/foo/bar"`)); match {
+		if match := u.MatchLevel(NewUri("POST", `"/foo/bar"`)); match != model.NoMatch {
 			t.Fatalf("expected not to match")
 		}
 	})
 
 	t.Run("root matches exactly", func(t *testing.T) {
 		u := NewUri("GET", `"/"`)
-		if match := u.IsMatch(NewUri("GET", `"/"`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/"`)); match != model.ExactMatch {
 			t.Errorf("expected root to match root")
 		}
-		if match := u.IsMatch(NewUri("GET", `"/foo"`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo"`)); match != model.NoMatch {
 			t.Errorf("expected root not to match non-root")
 		}
 	})
 
 	t.Run("wildcard path suffix {$} in the root", func(t *testing.T) {
 		u := NewUri("GET", `"/"`)
-		if match := u.IsMatch(NewUri("GET", `"/{$}"`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/{$}"`)); match != model.WildcardMatch {
 			t.Errorf("expected root to match root")
 		}
 	})
 
 	t.Run("exact literal match", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/bar"`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo/bar"`)); match != model.ExactMatch {
 			t.Errorf("expected match")
 		}
-		if match := u.IsMatch(NewUri("GET", `"/bar/foo"`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/bar/foo"`)); match != model.NoMatch {
 			t.Errorf("expected not to match")
 		}
 	})
 
 	t.Run("wildcard segment {}", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/{}"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/bar"`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo/bar"`)); match != model.VariableMatch {
 			t.Errorf("expected wildcard to match")
 		}
-		if match := u.IsMatch(NewUri("GET", `"/foo"`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo"`)); match != model.NoMatch {
 			t.Errorf("expected not to match with missing segment")
 		}
 	})
 
 	t.Run("wildcard path suffix {$} not in the root", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/{$}"`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo/{$}"`)); match != model.NoMatch {
 			t.Errorf("expected suffix wildcard not to match")
 		}
 	})
 
 	t.Run("trailing slash sensitivity", func(t *testing.T) {
 		u := NewUri("GET", `"/foo"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/"`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo/"`)); match != model.ExactMatch {
 			t.Errorf("expected match /foo with /foo/")
 		}
 	})
 
 	t.Run("exact vs prefix mismatch", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/bar/baz"`)); match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo/bar/baz"`)); match != model.NoMatch {
 			t.Errorf("expected not to match longer path without {$}")
-		}
-	})
-
-	t.Run("verb mismatch", func(t *testing.T) {
-		u := NewUri("GET", `"/foo/bar"`)
-		if match := u.IsMatch(NewUri("POST", `"/foo/bar"`)); match {
-			t.Errorf("expected verbs to differ and not match")
 		}
 	})
 
 	t.Run("long match with mixed variables", func(t *testing.T) {
 		u := NewUri("GET", `"/foo/{}/baz"`)
-		if match := u.IsMatch(NewUri("GET", `"/foo/bar/baz"`)); !match {
+		if match := u.MatchLevel(NewUri("GET", `"/foo/bar/baz"`)); match != model.VariableMatch {
 			t.Errorf("expected variable match in middle")
+		}
+	})
+
+	t.Run("`{path...}` literal", func(t *testing.T) {
+		u := NewUri("GET", `"/{path...}"`)
+		if match := u.MatchLevel(NewUri("GET", `"/page2"`)); match != model.VariableMatch {
+			t.Errorf("expect variable match")
 		}
 	})
 }
