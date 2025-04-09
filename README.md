@@ -37,4 +37,4 @@ In development but used in production at one of europe's largest tech companies.
 
 ## Using generated templates
 
-The template includes several modules that are optional and should be deleted to reduce build size. For example we include a postgres connector and a cloudsql connector for conveniance, but you should likely only need one of them.
+The template includes several modules that are optional and should be deleted to reduce build size. For example we include a postgres connector and a cloudsql connector for convenience, but you should likely only need one of them.

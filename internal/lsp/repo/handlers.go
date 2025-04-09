@@ -21,6 +21,7 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidOpenRequest: %s", err)
 			return
 		}
+
 		// only support opening templ files
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.OpenTemplFile(*t)
@@ -39,6 +40,7 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidChangeRequest: %s", err)
 			return
 		}
+
 		// replace templ file content
 		if filepath.Ext(t.TextDocument.Path) == ".templ" {
 			r.ChangeTemplFile(*t)
@@ -64,6 +66,7 @@ func DidClose(r *Repo) jsonrpc2.Handler {
 			log.Printf("error converting request to DidCloseRequest: %s", err)
 			return
 		}
+
 		if filepath.Ext(t.TextDocument.Path) != ".templ" {
 			return
 		}
