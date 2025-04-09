@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/gofs-cli/gofs/internal/lsp/jsonrpc2"
@@ -50,9 +51,11 @@ func Hover(r *repo.Repo) jsonrpc2.Handler {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
 			return
 		}
+		log.Printf("found hovered index: %d", uriIndex)
 
 		// no route found for uri
 		routeIndex := templFile.UrisRouteIndex[uriIndex]
+		log.Printf("get route index: %d", routeIndex)
 		if routeIndex == -1 {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
 			return
@@ -60,11 +63,15 @@ func Hover(r *repo.Repo) jsonrpc2.Handler {
 
 		// uri has a route
 		route, _ := r.GetRoute(routeIndex)
+		log.Printf("route: %v\n", route.Uri.Raw)
+
 		links := fmt.Sprintf("[routes.go](%s/internal/server/routes.go#%v)", r.RootPath, route.Uri.From.Line+1)
+
 		handler := r.GetPkgFunc(route.Pkg, route.Handler.Call)
 		if handler != nil {
 			links += fmt.Sprintf(" | [%s](%s#%v)", route.Handler.Call, handler.File, handler.Pos.Line+1)
 		}
+		log.Printf("updated link: %v\n", links)
 		b, err := json.Marshal(HoverResponseMarkup{
 			Contents: protocol.MarkupContent{
 				Kind:  "markdown",

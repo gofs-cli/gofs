@@ -239,6 +239,11 @@ func (r *Repo) GetRoute(index int) (*routesFile.Route, error) {
 	if !r.IsOpen {
 		return nil, errors.New("repo is not open")
 	}
+	// log.Printf("input index: %d", index)
+	// for i,r := range r.rt.Routes(){
+	// 	log.Printf("current index %d", i)
+	// 	log.Printf("uri %s", r.Uri.Raw)
+	// }
 
 	return r.rt.GetRoute(index)
 }
