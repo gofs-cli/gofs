@@ -6,8 +6,8 @@ import (
 	"github.com/gofs-cli/gofs/internal/lsp/uri"
 )
 
-func UriDiagnostic(uri uri.Uri) []DiagnosticResponse {
-	diagnostics := make([]DiagnosticResponse, 0)
+func UriDiagnostic(uri uri.Uri) []protocol.DiagnosticResponse {
+	diagnostics := make([]protocol.DiagnosticResponse, 0)
 	for _, d := range uri.Diag {
 		message := ""
 		switch d.Severity {
@@ -22,7 +22,7 @@ func UriDiagnostic(uri uri.Uri) []DiagnosticResponse {
 		default:
 			message = d.Message
 		}
-		diagnostics = append(diagnostics, DiagnosticResponse{
+		diagnostics = append(diagnostics, protocol.DiagnosticResponse{
 			Range: protocol.Range{
 				Start: protocol.Position{
 					Line:      uri.From.Line,

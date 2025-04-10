@@ -13,24 +13,16 @@ import (
 )
 
 func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, params any, id int) {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
-			que <- protocol.NewEmptyResponse(req.Id, FullDiagnosticResponse{})
+			que <- protocol.NewEmptyResponse(id, protocol.FullDiagnosticResponse{})
 			return
 		}
 
-		// decode request
-		p, err := protocol.DecodeParams[DiagnosticRequest](req)
-		if err != nil {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "error converting request to DiagnosticRequest",
-			})
-			return
-		}
+		p := params.(*protocol.DiagnosticRequest)
 
-		diagnostics := make([]DiagnosticResponse, 0)
+		diagnostics := make([]protocol.DiagnosticResponse, 0)
 
 		if path.Base(p.TextDocument.Path) == "routes.go" {
 			for _, route := range r.Routes() {
@@ -45,7 +37,7 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 			// get the templ file
 			templFile := r.GetTemplFile(p.TextDocument.Path)
 			if templFile == nil {
-				que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
+				que <- protocol.NewResponseError(id, protocol.ResponseError{
 					Code:    protocol.ErrorCodeInternalError,
 					Message: "templ file not found",
 				})
@@ -60,17 +52,17 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 			}
 		}
 
-		b, err := json.Marshal(FullDiagnosticResponse{
+		b, err := json.Marshal(protocol.FullDiagnosticResponse{
 			Kind:  KindFull,
 			Items: diagnostics,
 		})
 		if err != nil {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
+			que <- protocol.NewResponseError(id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInternalError,
 				Message: fmt.Sprintf("json marshal error: %s", err),
 			})
 			return
 		}
-		que <- protocol.NewResponse(req.Id, json.RawMessage(b))
+		que <- protocol.NewResponse(id, json.RawMessage(b))
 	}
 }

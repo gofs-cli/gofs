@@ -1,7 +1,9 @@
 package jsonrpc2
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -9,7 +11,7 @@ import (
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
 
-type Handler func(context.Context, chan protocol.Response, protocol.Request)
+type Handler func(context.Context, chan protocol.Response, any, int)
 
 type Server struct {
 	conn              *Conn
@@ -98,7 +100,42 @@ func (s *Server) ListenAndServe() error {
 
 		// handle lifecycle events first
 		if s.lifecycleHandlers[request.Method] != nil {
-			s.lifecycleHandlers[request.Method](context.Background(), responseQueue, *request)
+			var params any
+			switch request.Method {
+			case "initialize":
+				if request.Params == nil {
+					log.Println("initialize request missing params")
+					err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "initialize request missing params",
+					}))
+					if err != nil {
+						log.Printf("error sending initialize error: %v", err)
+					}
+					continue
+				}
+
+				var p protocol.InitializeRequest
+				err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&p)
+				if err != nil {
+					log.Printf("initialize request decode error: %s", err)
+					err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "initialize request decode error",
+					}))
+					if err != nil {
+						log.Printf("error sending initialize error: %v", err)
+					}
+					continue
+				}
+				params = &p
+
+			case "initialized":
+
+			case "shutdown":
+			}
+
+			s.lifecycleHandlers[request.Method](context.Background(), responseQueue, params, request.Id)
 			continue
 		}
 
@@ -121,9 +158,71 @@ func (s *Server) ListenAndServe() error {
 		if s.handlers[request.Method] != nil {
 			ctx := s.startRequestWithContext(request.Id)
 			c := make(chan bool)
+
+			var params any
+
+			switch request.Method {
+			case "textDocument/didOpen":
+				p, err := protocol.DecodeParams[protocol.DidOpenRequest](*request)
+				if err != nil {
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "error converting request to DidOpenRequest",
+					})
+					continue
+				}
+				params = p
+
+			case "textDocument/didChange":
+				p, err := protocol.DecodeParams[protocol.DidChangeRequest](*request)
+				if err != nil {
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "error converting request to DidChangeRequest",
+					})
+					continue
+				}
+				params = p
+
+			case "textDocument/didClose":
+				p, err := protocol.DecodeParams[protocol.DidCloseRequest](*request)
+				if err != nil {
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "error converting request to DidCloseRequest",
+					})
+					continue
+				}
+				params = p
+
+			case "textDocument/didSave":
+
+			case "textDocument/hover":
+				p, err := protocol.DecodeParams[protocol.HoverRequest](*request)
+				if err != nil {
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "error converting request to HoverRequest",
+					})
+					continue
+				}
+				params = p
+
+			case "textDocument/diagnostic":
+				p, err := protocol.DecodeParams[protocol.DiagnosticRequest](*request)
+				if err != nil {
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: "error converting request to DiagnosticRequest",
+					})
+					continue
+				}
+				params = p
+			}
+
 			go func() {
 				c <- true
-				s.handlers[request.Method](ctx, responseQueue, *request)
+				s.handlers[request.Method](ctx, responseQueue, params, request.Id)
 				s.endRequest(request.Id)
 			}()
 			<-c

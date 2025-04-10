@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofs-cli/gofs/internal/lsp/model"
 	"github.com/gofs-cli/gofs/internal/lsp/pkg"
+	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 	routesFile "github.com/gofs-cli/gofs/internal/lsp/routes_file"
 	templFile "github.com/gofs-cli/gofs/internal/lsp/templ_file"
 	"github.com/gofs-cli/gofs/internal/lsp/uri"
@@ -104,7 +105,7 @@ func (r *Repo) GetPkgFunc(pkg, f string) *pkg.Func {
 	return nil
 }
 
-func (r *Repo) OpenTemplFile(req DidOpenRequest) {
+func (r *Repo) OpenTemplFile(req protocol.DidOpenRequest) {
 	r.shouldLoad.Store(req.TextDocument.Path, true)
 	uris, err := templFile.GetTemplUris(req.TextDocument.Text)
 	if err != nil {
@@ -136,7 +137,7 @@ func (r *Repo) OpenTemplFile(req DidOpenRequest) {
 	})
 }
 
-func (r *Repo) ChangeTemplFile(req DidChangeRequest) {
+func (r *Repo) ChangeTemplFile(req protocol.DidChangeRequest) {
 	if len(req.ContentChanges) == 0 {
 		return
 	}
@@ -166,7 +167,7 @@ func (r *Repo) ChangeTemplFile(req DidChangeRequest) {
 	r.ot.Store(req.TextDocument.Path, *t)
 }
 
-func (r *Repo) CloseTemplFile(req DidCloseRequest) {
+func (r *Repo) CloseTemplFile(req protocol.DidCloseRequest) {
 	r.shouldLoad.Delete(req.TextDocument.Path)
 	r.ot.Delete(req.TextDocument.Path)
 }

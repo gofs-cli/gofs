@@ -10,40 +10,14 @@ import (
 )
 
 func Initialize(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
-		log.Println("server is initializing")
-		if request.Params == nil {
-			log.Println("initialize request missing params")
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "initialize request missing params",
-			}))
-			if err != nil {
-				log.Printf("error sending initialize error: %v", err)
-			}
-			return
-		}
-
-		// get the initialize message params, which include the rootPath
-		var params protocol.InitializeRequest
-		err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&params)
-		if err != nil {
-			log.Printf("initialize request decode error: %s", err)
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "initialize request decode error",
-			}))
-			if err != nil {
-				log.Printf("error sending initialize error: %v", err)
-			}
-			return
-		}
+	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
+		p := params.(*protocol.InitializeRequest)
 
 		// call the initializer function with the rootPath
-		err = s.initializer(params.RootPath)
+		err := s.initializer(p.RootPath)
 		if err != nil {
 			log.Printf("fatal: initialize error: %s", err)
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
+			err := s.conn.Write(protocol.NewResponseError(id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInternalError,
 				Message: "error calling initializer",
 			}))
@@ -61,25 +35,27 @@ func Initialize(s *Server) Handler {
 			log.Printf("json marshal error: %s", err)
 			return
 		}
-		err = s.conn.Write(protocol.NewResponse(request.Id, json.RawMessage(b)))
+		err = s.conn.Write(protocol.NewResponse(id, json.RawMessage(b)))
 		if err != nil {
 			log.Printf("error acknowledging shutdown: %v", err)
 		}
+
+		log.Println("completed the initialization")
 	}
 }
 
 func Initialized(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
 		log.Println("server is initialized")
 		s.isInitialized = true
 	}
 }
 
 func Shutdown(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
 		log.Println("server is shutting down")
 		s.isShutdown = true
-		err := s.conn.Write(protocol.NewResponse(request.Id, nil)) // acknowledge shutdown
+		err := s.conn.Write(protocol.NewResponse(id, nil)) // acknowledge shutdown
 		if err != nil {
 			log.Printf("error acknowledging shutdown: %v", err)
 		}
