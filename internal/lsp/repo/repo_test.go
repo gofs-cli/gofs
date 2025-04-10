@@ -157,7 +157,7 @@ templ Test() {}
 		}
 	})
 
-	t.Run("handler does not blocks when it does not requires a file", func(t *testing.T) {
+	t.Run("handler does not block when it does not requires a file", func(t *testing.T) {
 		initParams := json.RawMessage(`{"rootPath": "/foo/bar"}`)
 		reader := newTestReader([]protocol.Request{
 			{
@@ -190,6 +190,7 @@ templ Test() {}
 		s := testServer(conn)
 		r := NewRepo()
 		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
+			time.Sleep(100 * time.Millisecond)
 			r.OpenTemplFile(protocol.DidOpenRequest{
 				TextDocument: protocol.TextDocument{
 					Path: "/foo/bar/templ.templ",
