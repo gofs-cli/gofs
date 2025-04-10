@@ -53,7 +53,7 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 		}
 
 		b, err := json.Marshal(protocol.FullDiagnosticResponse{
-			Kind:  KindFull,
+			Kind:  protocol.KindFull,
 			Items: diagnostics,
 		})
 		if err != nil {
