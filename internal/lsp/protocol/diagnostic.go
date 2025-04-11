@@ -1,9 +1,7 @@
-package diagnostic
-
-import "github.com/gofs-cli/gofs/internal/lsp/protocol"
+package protocol
 
 type DiagnosticRequest struct {
-	TextDocument protocol.TextDocument `json:"textDocument"`
+	TextDocument TextDocument `json:"textDocument"`
 }
 
 type FullDiagnosticResponse struct {
@@ -17,7 +15,7 @@ type PublishDiagnosticsParams struct {
 }
 
 type DiagnosticResponse struct {
-	Range           protocol.Range   `json:"range"`
+	Range           Range            `json:"range"`
 	Severity        int              `json:"severity"`
 	Code            int              `json:"code"`
 	CodeDescription *CodeDescription `json:"codeDescription,omitempty"`

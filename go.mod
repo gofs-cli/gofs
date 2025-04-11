@@ -11,6 +11,5 @@ require (
 
 require (
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e
-	github.com/google/uuid v1.6.0
 	golang.org/x/sync v0.12.0 // indirect
 )

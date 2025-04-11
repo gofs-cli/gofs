@@ -144,8 +144,8 @@ func TestListenAndServe(t *testing.T) {
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
 		s := testServer(conn)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
-			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "bar"}`))
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
+			rq <- protocol.NewResponse(id, json.RawMessage(`{"foo": "bar"}`))
 		})
 		go func() {
 			// give the writer time to write the response
@@ -210,12 +210,12 @@ func TestListenAndServe(t *testing.T) {
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
 		s := testServer(conn)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
 			time.Sleep(100 * time.Millisecond)
-			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "response"}`))
+			rq <- protocol.NewResponse(id, json.RawMessage(`{"foo": "response"}`))
 		})
-		s.HandleRequest("bar", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
-			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"bar": "response"}`))
+		s.HandleRequest("bar", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
+			rq <- protocol.NewResponse(id, json.RawMessage(`{"bar": "response"}`))
 		})
 		go func() {
 			// give the handlers time to respond
@@ -285,14 +285,14 @@ func TestListenAndServe(t *testing.T) {
 		conn := NewConn(reader, writer)
 		s := testServer(conn)
 		cancelled := false
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
 			// give the cancel request time to be processed
 			time.Sleep(100 * time.Millisecond)
 			select {
 			case <-ctx.Done():
 				cancelled = true
 			default:
-				rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "response"}`))
+				rq <- protocol.NewResponse(id, json.RawMessage(`{"foo": "response"}`))
 			}
 		})
 		go func() {
