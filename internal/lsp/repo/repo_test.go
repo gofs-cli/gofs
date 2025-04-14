@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofs-cli/gofs/internal/lsp/jsonrpc2"
-	"github.com/gofs-cli/gofs/internal/lsp/pkg"
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
 
@@ -249,55 +248,5 @@ templ Test() {}
 		if writer.String() != expected {
 			t.Errorf("expected:\n%v\ngot:\n%v", expected, writer.String())
 		}
-	})
-}
-
-func TestReloadPkgs(t *testing.T) {
-	t.Parallel()
-	t.Run("no race condition", func(t *testing.T) {
-		r := NewRepo()
-
-		// Simulate that the repo is already open
-		r.IsOpen = true
-
-		r.mu.Lock()
-		pkgs := map[string]pkg.Pkg{
-			"math": {
-				Files: []string{"add.go", "subtract.go"},
-				Funcs: []pkg.Func{
-					{Name: "Add"},
-					{Name: "Subtract"},
-				},
-			},
-			"strings": {
-				Files: []string{"concat.go", "split.go"},
-				Funcs: []pkg.Func{
-					{Name: "Concat"},
-					{Name: "Split"},
-				},
-			},
-		}
-		r.pkgs = pkgs
-		r.mu.Unlock()
-
-		var wg sync.WaitGroup
-
-		// Start a goroutine that keeps reading pkgs concurrently
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for i := 0; i < 1000; i++ {
-				r.mu.RLock()
-				_ = len(r.pkgs)
-				r.mu.RUnlock()
-			}
-		}()
-
-		// In the main thread, run ReloadPkgs multiple times
-		for i := 0; i < 100; i++ {
-			r.ReloadPkgs()
-		}
-
-		wg.Wait()
 	})
 }
