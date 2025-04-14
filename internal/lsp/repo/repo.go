@@ -26,6 +26,7 @@ type Repo struct {
 	ot            sync.Map           // open templ files
 	pkgs          map[string]pkg.Pkg // loaded packages
 	shouldLoad    sync.Map           // files that are being loaded or have loaded
+	mu            sync.RWMutex			// mutex to protect rt and pkgs 
 }
 
 func NewRepo() *Repo {
@@ -205,6 +206,10 @@ func (r *Repo) RecalculateTemplUrls() {
 
 func (r *Repo) ReloadPkgs() {
 	// can be called if the repo is not open
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	// clear old pkgs
 	r.pkgs = make(map[string]pkg.Pkg)
 	for _, route := range r.rt.Routes() {
@@ -225,6 +230,9 @@ func (r *Repo) UpdateRoutes(b []byte) {
 	if !r.IsOpen {
 		return
 	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	r.rt.Update(b)
 	r.RecalculateTemplUrls()

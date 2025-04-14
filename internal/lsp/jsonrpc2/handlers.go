@@ -78,7 +78,7 @@ func Initialized(s *Server) Handler {
 func Shutdown(s *Server) Handler {
 	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
 		log.Println("server is shutting down")
-		s.isShutdown = true
+		s.isShutdown.Store(true)
 		err := s.conn.Write(protocol.NewResponse(request.Id, nil)) // acknowledge shutdown
 		if err != nil {
 			log.Printf("error acknowledging shutdown: %v", err)

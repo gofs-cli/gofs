@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gofs-cli/gofs/internal/lsp/jsonrpc2"
+	"github.com/gofs-cli/gofs/internal/lsp/pkg"
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
 
@@ -35,28 +36,39 @@ func (r *testReader) addReq(req protocol.Request) {
 }
 
 func (r *testReader) Close() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	r.open = false
 }
 
 func (r *testReader) Read(p []byte) (int, error) {
-	if !r.open {
+	r.mutex.Lock()
+	open := r.open
+	r.mutex.Unlock()
+	if !open {
 		return 0, io.EOF
 	}
-	for r.cur >= len(r.reqs) {
-		time.Sleep(100 * time.Millisecond)
-	}
 
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	for {
+		r.mutex.Lock()
+		if r.cur < len(r.reqs) {
+			break
+		}
+		r.mutex.Unlock()
+		time.Sleep(10 * time.Millisecond) // reduce wait time
+	}
 
 	msg, err := protocol.BaseMessage(r.reqs[r.cur])
 	if err != nil {
+		r.mutex.Unlock()
 		return 0, err
 	}
-	p = p[:len(msg)]
-	copy(p, msg)
 	r.cur++
-	return len(p), nil
+	r.mutex.Unlock()
+
+	// copy outside of lock
+	n := copy(p, msg)
+	return n, nil
 }
 
 func testServer(c *jsonrpc2.Conn) *jsonrpc2.Server {
@@ -237,5 +249,55 @@ templ Test() {}
 		if writer.String() != expected {
 			t.Errorf("expected:\n%v\ngot:\n%v", expected, writer.String())
 		}
+	})
+}
+
+func TestReloadPkgs(t *testing.T) {
+	t.Parallel()
+	t.Run("no race condition", func(t *testing.T) {
+		r := NewRepo()
+
+		// Simulate that the repo is already open
+		r.IsOpen = true
+
+		r.mu.Lock()
+		pkgs := map[string]pkg.Pkg{
+			"math": {
+				Files: []string{"add.go", "subtract.go"},
+				Funcs: []pkg.Func{
+					{Name: "Add"},
+					{Name: "Subtract"},
+				},
+			},
+			"strings": {
+				Files: []string{"concat.go", "split.go"},
+				Funcs: []pkg.Func{
+					{Name: "Concat"},
+					{Name: "Split"},
+				},
+			},
+		}
+		r.pkgs = pkgs
+		r.mu.Unlock()
+
+		var wg sync.WaitGroup
+
+		// Start a goroutine that keeps reading pkgs concurrently
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 1000; i++ {
+				r.mu.RLock()
+				_ = len(r.pkgs)
+				r.mu.RUnlock()
+			}
+		}()
+
+		// In the main thread, run ReloadPkgs multiple times
+		for i := 0; i < 100; i++ {
+			r.ReloadPkgs()
+		}
+
+		wg.Wait()
 	})
 }
