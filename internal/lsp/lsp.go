@@ -1,7 +1,8 @@
 package lsp
 
 import (
-	"log"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -13,17 +14,10 @@ import (
 )
 
 func Start() {
-	// open log file in user's home directory
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	logFile, err := os.OpenFile(filepath.Join(dirname, "gofs.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer logFile.Close()
-	log.SetOutput(logFile)
+	// InitLogger sets up slog to log into ~/.gofs/debug.log if debug == true.
+	// Otherwise it silences the logger.
+	// TODO: clarify the debug mode
+	initLogger(true)
 
 	r := repo.NewRepo()
 
@@ -39,7 +33,8 @@ func Start() {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("fatal error", "err", err)
+		os.Exit(1)
 	}
 
 	// lifecycle handlers
@@ -59,6 +54,35 @@ func Start() {
 
 	err = s.ListenAndServe()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("fatal error", "err", err)
+		os.Exit(1)
 	}
+}
+
+func initLogger(debug bool) {
+	if !debug {
+		slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+		return
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic("failed to get user home dir: " + err.Error())
+	}
+
+	logDir := filepath.Join(home, ".gofs")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		panic("failed to create log dir: " + err.Error())
+	}
+
+	logPath := filepath.Join(logDir, "debug.log")
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		panic("failed to open log file: " + err.Error())
+	}
+
+	handler := slog.NewTextHandler(f, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(handler))
 }

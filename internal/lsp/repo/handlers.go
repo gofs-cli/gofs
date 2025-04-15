@@ -2,7 +2,7 @@ package repo
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"path"
 	"path/filepath"
 
@@ -18,7 +18,7 @@ func DidOpen(r *Repo) jsonrpc2.Handler {
 		}
 		t, err := protocol.DecodeParams[DidOpenRequest](req)
 		if err != nil {
-			log.Printf("error converting request to DidOpenRequest: %s", err)
+			slog.Error("error converting request to DidOpenRequest", "err", err)
 			return
 		}
 
@@ -37,7 +37,7 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 		}
 		t, err := protocol.DecodeParams[DidChangeRequest](req)
 		if err != nil {
-			log.Printf("error converting request to DidChangeRequest: %s", err)
+			slog.Error("error converting request to DidChangeRequest", "err", err)
 			return
 		}
 
@@ -63,7 +63,7 @@ func DidClose(r *Repo) jsonrpc2.Handler {
 		}
 		t, err := protocol.DecodeParams[DidCloseRequest](req)
 		if err != nil {
-			log.Printf("error converting request to DidCloseRequest: %s", err)
+			slog.Error("error converting request to DidCloseRequest: %s", "err", err)
 			return
 		}
 

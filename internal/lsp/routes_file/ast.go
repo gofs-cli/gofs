@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log"
+	"log/slog"
 	"path"
 	"strings"
 
@@ -17,7 +17,7 @@ func getImports(raw []byte) map[string]string {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", raw, parser.AllErrors)
 	if err != nil {
-		log.Println("error parsing routes.go file: ", err)
+		slog.Error("error parsing routes.go file: ", "err", err)
 		return imports
 	}
 
@@ -44,7 +44,7 @@ func getRoutes(raw []byte) []Route {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", raw, parser.ParseComments)
 	if err != nil {
-		log.Println("error parsing routes.go file: ", err)
+		slog.Error("error parsing routes.go file: ", "err", err)
 		return routes
 	}
 
