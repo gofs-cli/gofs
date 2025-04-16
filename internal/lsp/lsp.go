@@ -13,11 +13,11 @@ import (
 	"github.com/gofs-cli/gofs/internal/lsp/repo"
 )
 
-func Start() {
+func Start(debug bool) {
 	// InitLogger sets up slog to log into ~/.gofs/debug.log if debug == true.
 	// Otherwise it silences the logger.
 	// TODO: clarify the debug mode
-	initLogger(true)
+	initLogger(debug)
 
 	r := repo.NewRepo()
 

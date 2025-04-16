@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"flag"
+
 	"github.com/gofs-cli/gofs/internal/lsp"
 )
 
@@ -19,5 +21,9 @@ func init() {
 }
 
 func cmdLsp() {
-	lsp.Start()
+	fs := flag.NewFlagSet("lsp", flag.ExitOnError)
+	debug := fs.Bool("debug", false, "enable debug logging")
+	_ = fs.Parse(flag.Args()[1:]) // skip "lsp" itself
+
+	lsp.Start(*debug)
 }
