@@ -15,6 +15,11 @@ func (r *Routes) IsValid() bool {
 	return r.b != nil
 }
 
+func (r *Routes) SetDefault() {
+	r.routes = []Route{}
+	r.b = []byte{}
+}
+
 func (r *Routes) Update(b []byte) {
 	r.routes = getRoutes(b)
 	r.b = b

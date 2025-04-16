@@ -62,11 +62,14 @@ func (r *Repo) Open(rootPath string) error {
 
 	// read routes.go file and parse routes
 	routesFile, err := os.ReadFile(path.Join(rootPath, "internal", "server", "routes.go"))
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
+	} else if errors.Is(err, os.ErrNotExist) {
+		r.rt.SetDefault()
+	} else {
+		r.rt.Update(routesFile)
+		r.ReloadPkgs()
 	}
-	r.rt.Update(routesFile)
-	r.ReloadPkgs()
 
 	r.IsOpen = true
 	return nil
