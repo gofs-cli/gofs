@@ -16,3 +16,10 @@ type Pos struct {
 	Line int
 	Col  int
 }
+
+const (
+	NoMatch = iota
+	WildcardMatch
+	VariableMatch
+	ExactMatch
+)

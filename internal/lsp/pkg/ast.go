@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log"
+	"log/slog"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -28,7 +28,7 @@ func GetPkg(name string) (*Pkg, error) {
 		fset := token.NewFileSet()
 		file, err := parser.ParseFile(fset, g, nil, parser.AllErrors)
 		if err != nil {
-			log.Printf("error parsing %s file: %v", g, err)
+			slog.Error("error parsing file", "file", g, "err", err)
 			continue
 		}
 

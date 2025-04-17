@@ -3,6 +3,7 @@ package routesFile
 import (
 	"errors"
 
+	"github.com/gofs-cli/gofs/internal/lsp/model"
 	"github.com/gofs-cli/gofs/internal/lsp/uri"
 )
 
@@ -32,11 +33,15 @@ func (r *Routes) GetRoute(i int) (*Route, error) {
 }
 
 func (r *Routes) RouteIndex(uri uri.Uri) int {
+	bestIndex := -1
+	bestLevel := model.NoMatch
+
 	for i, route := range r.routes {
-		if match := route.Uri.IsMatch(uri); match {
-			return i
+		if level := route.Uri.MatchLevel(uri); level > bestLevel {
+			bestLevel = level
+			bestIndex = i
 		}
 	}
 
-	return -1
+	return bestIndex
 }

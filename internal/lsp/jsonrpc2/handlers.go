@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
+
+const msgInitializeFailed = "error sending initialize error"
 
 func Initialize(s *Server) Handler {
 	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
@@ -16,13 +18,13 @@ func Initialize(s *Server) Handler {
 		// call the initializer function with the rootPath
 		err := s.initializer(p.RootPath)
 		if err != nil {
-			log.Printf("fatal: initialize error: %s", err)
+			slog.Error("fatal: initialize error", "err", err)
 			err := s.conn.Write(protocol.NewResponseError(id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInternalError,
 				Message: "error calling initializer",
 			}))
 			if err != nil {
-				log.Printf("error sending initialize error: %v", err)
+				slog.Error(msgInitializeFailed, "err", err)
 			}
 			return
 		}
@@ -32,32 +34,30 @@ func Initialize(s *Server) Handler {
 			Capabilities: s.capabilities,
 		})
 		if err != nil {
-			log.Printf("json marshal error: %s", err)
+			slog.Error("json marshal error", "err", err)
 			return
 		}
 		err = s.conn.Write(protocol.NewResponse(id, json.RawMessage(b)))
 		if err != nil {
-			log.Printf("error acknowledging shutdown: %v", err)
+			slog.Error("error acknowledging shutdown", "err", err)
 		}
-
-		log.Println("completed the initialization")
 	}
 }
 
 func Initialized(s *Server) Handler {
 	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
-		log.Println("server is initialized")
+		slog.Info("server is initialized")
 		s.isInitialized = true
 	}
 }
 
 func Shutdown(s *Server) Handler {
 	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
-		log.Println("server is shutting down")
+		slog.Info("server is shutting down")
 		s.isShutdown = true
 		err := s.conn.Write(protocol.NewResponse(id, nil)) // acknowledge shutdown
 		if err != nil {
-			log.Printf("error acknowledging shutdown: %v", err)
+			slog.Error("error acknowledging shutdown", "err", err)
 		}
 	}
 }
@@ -71,7 +71,7 @@ func (s *Server) Cancel(request protocol.Request) {
 	var params protocol.CancelRequest
 	err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&params)
 	if err != nil {
-		log.Printf("cancel request decode error: %s", err)
+		slog.Error("cancel request decode error", "err", err)
 		return
 	}
 
