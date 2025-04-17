@@ -7,8 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/textproto"
+	"os"
 	"strconv"
 	"sync"
 
@@ -28,7 +29,8 @@ func NewConn(in io.Reader, out io.Writer) *Conn {
 func (c *Conn) Read() (*protocol.Request, error) {
 	header, err := textproto.NewReader(c.In).ReadMIMEHeader()
 	if err == io.EOF {
-		log.Fatal("read io EOF. terminating...\n")
+		slog.Error("read io EOF. terminating...")
+		os.Exit(1)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("message MIME header error: %s", err)
@@ -42,7 +44,8 @@ func (c *Conn) Read() (*protocol.Request, error) {
 	b := make([]byte, l)
 	i, err := io.ReadFull(c.In, b)
 	if err == io.EOF {
-		log.Fatal("io EOF. terminating...\n")
+		slog.Error("io EOF. terminating...")
+		os.Exit(1)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("message body read error: %s", err)
@@ -71,7 +74,8 @@ func (c *Conn) Write(r protocol.Response) error {
 
 	_, err = c.Out.Write(b)
 	if err == io.ErrClosedPipe {
-		log.Fatal("write io EOF. terminating...\n")
+		slog.Error("write io EOF. terminating...")
+		os.Exit(1)
 	}
 	if err != nil {
 		return fmt.Errorf("message write header error: %s", err)
@@ -79,7 +83,8 @@ func (c *Conn) Write(r protocol.Response) error {
 
 	err = c.Out.Flush()
 	if err == io.ErrClosedPipe {
-		log.Fatal("write io EOF. terminating...\n")
+		slog.Error("write io EOF. terminating...")
+		os.Exit(1)
 	}
 	if err != nil {
 		return fmt.Errorf("write buffer flush error: %s", err)

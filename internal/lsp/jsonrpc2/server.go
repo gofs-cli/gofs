@@ -3,7 +3,7 @@ package jsonrpc2
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
@@ -66,7 +66,7 @@ func (s *Server) isRunning(id int) (bool, context.CancelFunc) {
 }
 
 func (s *Server) ListenAndServe() error {
-	log.Println("server is listening")
+	slog.Info("server is listening")
 
 	// responses from handlers are written asynchronously using this goroutine
 	responseQueue := make(chan protocol.Response)
@@ -77,7 +77,7 @@ func (s *Server) ListenAndServe() error {
 			}
 			err := s.conn.Write(response)
 			if err != nil {
-				log.Println("error writing response: ", err)
+				slog.Error("error writing response", "err", err)
 			}
 		}
 	}()
@@ -86,12 +86,12 @@ func (s *Server) ListenAndServe() error {
 	for {
 		request, err := s.conn.Read()
 		if err != nil {
-			log.Println("error reading request: ", err)
+			slog.Error("error reading request", "err", err)
 			continue
 		}
 
 		if request.Method == "exit" {
-			log.Println("server exit")
+			slog.Info("server exit")
 			// graceful exit
 			return nil
 		}
@@ -107,7 +107,7 @@ func (s *Server) ListenAndServe() error {
 			// requests should error with InvalidRequest
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{Code: protocol.ErrorCodeInvalidRequest, Message: "received request after shutdown"}))
 			if err != nil {
-				log.Println("error writing response: ", err)
+				slog.Error("error writing response", "err", err)
 			}
 			continue
 		}
@@ -130,6 +130,6 @@ func (s *Server) ListenAndServe() error {
 			continue
 		}
 
-		log.Println("unhandled method: ", request.Method)
+		slog.Warn("unhandled method", "method", request.Method)
 	}
 }
