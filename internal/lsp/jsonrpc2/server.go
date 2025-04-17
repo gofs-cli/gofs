@@ -104,13 +104,13 @@ func (s *Server) ListenAndServe() error {
 			switch request.Method {
 			case "initialize":
 				if request.Params == nil {
-					log.Println("initialize request missing params")
+					slog.Warn("initialize request missing params")
 					err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
 						Code:    protocol.ErrorCodeInvalidParams,
 						Message: "initialize request missing params",
 					}))
 					if err != nil {
-						log.Printf("error sending initialize error: %v", err)
+						slog.Error(msgInitializeFailed, "err", err)
 					}
 					continue
 				}
@@ -118,13 +118,13 @@ func (s *Server) ListenAndServe() error {
 				var p protocol.InitializeRequest
 				err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&p)
 				if err != nil {
-					log.Printf("initialize request decode error: %s", err)
+					slog.Error("initialize request decode error", "err", err)
 					err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
 						Code:    protocol.ErrorCodeInvalidParams,
 						Message: "initialize request decode error",
 					}))
 					if err != nil {
-						log.Printf("error sending initialize error: %v", err)
+						slog.Error(msgInitializeFailed, "err", err)
 					}
 					continue
 				}

@@ -157,7 +157,7 @@ templ Test() {}
 		}
 	})
 
-	t.Run("handler does not block when it does not requires a file", func(t *testing.T) {
+	t.Run("handler does not block when it does not require a file", func(t *testing.T) {
 		initParams := json.RawMessage(`{"rootPath": "/foo/bar"}`)
 		reader := newTestReader([]protocol.Request{
 			{
