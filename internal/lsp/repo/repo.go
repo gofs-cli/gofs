@@ -117,6 +117,7 @@ func (r *Repo) OpenTemplFile(req DidOpenRequest) {
 		})
 		return
 	}
+
 	uriRouteIndex := make([]int, len(uris))
 	for i := range uris {
 		uriRouteIndex[i] = r.rt.RouteIndex(uris[i])
