@@ -2,7 +2,7 @@ package repo
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"os"
 	"path"
 	"sync"
@@ -120,6 +120,7 @@ func (r *Repo) OpenTemplFile(req DidOpenRequest) {
 		})
 		return
 	}
+
 	uriRouteIndex := make([]int, len(uris))
 	for i := range uris {
 		uriRouteIndex[i] = r.rt.RouteIndex(uris[i])
@@ -181,7 +182,7 @@ func (r *Repo) RecalculateTemplUrls() {
 		t := value.(templFile.TemplFile)
 		uris, err := templFile.GetTemplUris(t.Text)
 		if err != nil {
-			log.Printf("error getting templ urls: %v", err.Error())
+			slog.Error("error getting templ urls", "err", err)
 			return true
 		}
 		uriRouteIndex := make([]int, len(uris))
