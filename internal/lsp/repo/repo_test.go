@@ -102,8 +102,8 @@ func TestListenAndServe(t *testing.T) {
 		conn := jsonrpc2.NewConn(reader, writer)
 		s := testServer(conn)
 		r := NewRepo()
-		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) {
-			r.OpenTemplFile(DidOpenRequest{
+		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
+			r.OpenTemplFile(protocol.DidOpenRequest{
 				TextDocument: protocol.TextDocument{
 					Path: "/foo/bar/templ.templ",
 					Text: `package test
@@ -112,14 +112,14 @@ templ Test() {}
 `,
 				},
 			})
-			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"didOpen": "response"}`))
+			rq <- protocol.NewResponse(id, json.RawMessage(`{"didOpen": "response"}`))
 		})
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
 			t := r.GetTemplFile("/foo/bar/templ.templ")
 			if t == nil {
-				rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "fail"}`))
+				rq <- protocol.NewResponse(id, json.RawMessage(`{"foo": "fail"}`))
 			} else {
-				rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "response"}`))
+				rq <- protocol.NewResponse(id, json.RawMessage(`{"foo": "response"}`))
 			}
 		})
 		go func() {
@@ -157,7 +157,7 @@ templ Test() {}
 		}
 	})
 
-	t.Run("handler does not blocks when it does not requires a file", func(t *testing.T) {
+	t.Run("handler does not block when it does not require a file", func(t *testing.T) {
 		initParams := json.RawMessage(`{"rootPath": "/foo/bar"}`)
 		reader := newTestReader([]protocol.Request{
 			{
@@ -189,8 +189,9 @@ templ Test() {}
 		conn := jsonrpc2.NewConn(reader, writer)
 		s := testServer(conn)
 		r := NewRepo()
-		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) {
-			r.OpenTemplFile(DidOpenRequest{
+		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
+			time.Sleep(100 * time.Millisecond)
+			r.OpenTemplFile(protocol.DidOpenRequest{
 				TextDocument: protocol.TextDocument{
 					Path: "/foo/bar/templ.templ",
 					Text: `package test
@@ -199,10 +200,10 @@ templ Test() {}
 `,
 				},
 			})
-			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"didOpen": "response"}`))
+			rq <- protocol.NewResponse(id, json.RawMessage(`{"didOpen": "response"}`))
 		})
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) {
-			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "response"}`))
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, params any, id int) {
+			rq <- protocol.NewResponse(id, json.RawMessage(`{"foo": "response"}`))
 		})
 		go func() {
 			// give the handlers time to respond

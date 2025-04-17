@@ -12,40 +12,14 @@ import (
 const msgInitializeFailed = "error sending initialize error"
 
 func Initialize(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
-		slog.Info("server is initializing")
-		if request.Params == nil {
-			slog.Warn("initialize request missing params")
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "initialize request missing params",
-			}))
-			if err != nil {
-				slog.Error(msgInitializeFailed, "err", err)
-			}
-			return
-		}
-
-		// get the initialize message params, which include the rootPath
-		var params protocol.InitializeRequest
-		err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&params)
-		if err != nil {
-			slog.Error("initialize request decode error", "err", err)
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "initialize request decode error",
-			}))
-			if err != nil {
-				slog.Error(msgInitializeFailed, "err", err)
-			}
-			return
-		}
+	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
+		p := params.(*protocol.InitializeRequest)
 
 		// call the initializer function with the rootPath
-		err = s.initializer(params.RootPath)
+		err := s.initializer(p.RootPath)
 		if err != nil {
 			slog.Error("fatal: initialize error", "err", err)
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
+			err := s.conn.Write(protocol.NewResponseError(id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInternalError,
 				Message: "error calling initializer",
 			}))
@@ -63,7 +37,7 @@ func Initialize(s *Server) Handler {
 			slog.Error("json marshal error", "err", err)
 			return
 		}
-		err = s.conn.Write(protocol.NewResponse(request.Id, json.RawMessage(b)))
+		err = s.conn.Write(protocol.NewResponse(id, json.RawMessage(b)))
 		if err != nil {
 			slog.Error("error acknowledging shutdown", "err", err)
 		}
@@ -71,17 +45,17 @@ func Initialize(s *Server) Handler {
 }
 
 func Initialized(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
 		slog.Info("server is initialized")
 		s.isInitialized = true
 	}
 }
 
 func Shutdown(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, params any, id int) {
 		slog.Info("server is shutting down")
 		s.isShutdown = true
-		err := s.conn.Write(protocol.NewResponse(request.Id, nil)) // acknowledge shutdown
+		err := s.conn.Write(protocol.NewResponse(id, nil)) // acknowledge shutdown
 		if err != nil {
 			slog.Error("error acknowledging shutdown", "err", err)
 		}
