@@ -35,28 +35,39 @@ func (r *testReader) addReq(req protocol.Request) {
 }
 
 func (r *testReader) Close() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	r.open = false
 }
 
 func (r *testReader) Read(p []byte) (int, error) {
-	if !r.open {
+	r.mutex.Lock()
+	open := r.open
+	r.mutex.Unlock()
+	if !open {
 		return 0, io.EOF
 	}
-	for r.cur >= len(r.reqs) {
-		time.Sleep(100 * time.Millisecond)
-	}
 
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	for {
+		r.mutex.Lock()
+		if r.cur < len(r.reqs) {
+			break
+		}
+		r.mutex.Unlock()
+		time.Sleep(10 * time.Millisecond) // reduce wait time
+	}
 
 	msg, err := protocol.BaseMessage(r.reqs[r.cur])
 	if err != nil {
+		r.mutex.Unlock()
 		return 0, err
 	}
-	p = p[:len(msg)]
-	copy(p, msg)
 	r.cur++
-	return len(p), nil
+	r.mutex.Unlock()
+
+	// copy outside of lock
+	n := copy(p, msg)
+	return n, nil
 }
 
 func testServer(c *jsonrpc2.Conn) *jsonrpc2.Server {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
@@ -16,7 +17,7 @@ type Server struct {
 	lifecycleHandlers map[string]Handler // lifecycle events
 	handlers          map[string]Handler // notification and request events
 	isInitialized     bool
-	isShutdown        bool
+	isShutdown        *atomic.Bool
 	initializer       func(string) error // function to call when rootPath is known
 	capabilities      protocol.ServerCapabilities
 	active            sync.Map
@@ -33,7 +34,7 @@ func NewServer(conn *Conn, initializer func(string) error, capabilities protocol
 		lifecycleHandlers: make(map[string]Handler),
 		handlers:          make(map[string]Handler),
 		isInitialized:     false,
-		isShutdown:        false,
+		isShutdown:        &atomic.Bool{},
 		initializer:       initializer,
 		capabilities:      capabilities,
 		active:            sync.Map{},
@@ -72,7 +73,7 @@ func (s *Server) ListenAndServe() error {
 	responseQueue := make(chan protocol.Response)
 	go func() {
 		for response := range responseQueue {
-			if s.isShutdown {
+			if s.isShutdown.Load() {
 				break
 			}
 			err := s.conn.Write(response)
@@ -103,7 +104,7 @@ func (s *Server) ListenAndServe() error {
 		}
 
 		// do not process requests if lifecycle is before initialization or after shutdown
-		if !s.isInitialized || s.isShutdown {
+		if !s.isInitialized || s.isShutdown.Load() {
 			// requests should error with InvalidRequest
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{Code: protocol.ErrorCodeInvalidRequest, Message: "received request after shutdown"}))
 			if err != nil {
