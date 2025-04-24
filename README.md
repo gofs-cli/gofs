@@ -1,4 +1,5 @@
-![gofs logo](/docs/gofs.svg)
+![gofs logo](/docs/gofs.svg#gh-light-mode-only)
+![gofs logo](/docs/gofs-dark.svg#gh-dark-mode-only)
 
 # gofs (Go Full Stack)
 

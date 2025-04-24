@@ -1,7 +1,8 @@
 package lsp
 
 import (
-	"log"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -12,18 +13,11 @@ import (
 	"github.com/gofs-cli/gofs/internal/lsp/repo"
 )
 
-func Start() {
-	// open log file in user's home directory
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	logFile, err := os.OpenFile(filepath.Join(dirname, "gofs.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer logFile.Close()
-	log.SetOutput(logFile)
+func Start(debug bool) {
+	// InitLogger sets up slog to log into ~/.gofs/debug.log if debug == true.
+	// Otherwise it silences the logger.
+	// TODO: clarify the debug mode
+	initLogger(debug)
 
 	r := repo.NewRepo()
 
@@ -39,7 +33,8 @@ func Start() {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("fatal error", "err", err)
+		os.Exit(1)
 	}
 
 	// lifecycle handlers
@@ -48,17 +43,46 @@ func Start() {
 	s.HandleLifecycle("shutdown", jsonrpc2.Shutdown(s))
 
 	// repo handlers
-	s.HandleRequest("textDocument/didOpen", repo.DidOpen(r))
-	s.HandleRequest("textDocument/didClose", repo.DidClose(r))
-	s.HandleRequest("textDocument/didChange", repo.DidChange(r))
-	s.HandleRequest("textDocument/didSave", repo.DidSave(r))
+	s.HandleRequest("textDocument/didOpen", repo.DidOpen(r), jsonrpc2.DecodeParams[repo.DidOpenRequest]())
+	s.HandleRequest("textDocument/didClose", repo.DidClose(r), jsonrpc2.DecodeParams[repo.DidCloseRequest]())
+	s.HandleRequest("textDocument/didChange", repo.DidChange(r), jsonrpc2.DecodeParams[repo.DidChangeRequest]())
+	s.HandleRequest("textDocument/didSave", repo.DidSave(r), nil)
 
 	// language handlers
-	s.HandleRequest("textDocument/hover", hover.Hover(r))
-	s.HandleRequest("textDocument/diagnostic", diagnostic.Diagnostic(r))
+	s.HandleRequest("textDocument/hover", hover.Hover(r), jsonrpc2.DecodeParams[hover.HoverRequest]())
+	s.HandleRequest("textDocument/diagnostic", diagnostic.Diagnostic(r), jsonrpc2.DecodeParams[diagnostic.DiagnosticRequest]())
 
 	err = s.ListenAndServe()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("fatal error", "err", err)
+		os.Exit(1)
 	}
+}
+
+func initLogger(debug bool) {
+	if !debug {
+		slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+		return
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic("failed to get user home dir: " + err.Error())
+	}
+
+	logDir := filepath.Join(home, ".gofs")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		panic("failed to create log dir: " + err.Error())
+	}
+
+	logPath := filepath.Join(logDir, "debug.log")
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		panic("failed to open log file: " + err.Error())
+	}
+
+	handler := slog.NewTextHandler(f, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(handler))
 }

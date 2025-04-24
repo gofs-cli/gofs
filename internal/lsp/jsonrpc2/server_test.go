@@ -19,6 +19,10 @@ type testReader struct {
 	mutex sync.Mutex
 }
 
+func NilDecoder(_ protocol.Request) (any, error) {
+	return nil, nil
+}
+
 func newTestReader(reqs []protocol.Request) *testReader {
 	return &testReader{
 		reqs: reqs,
@@ -144,9 +148,9 @@ func TestListenAndServe(t *testing.T) {
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
 		s := testServer(conn)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
 			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "bar"}`))
-		})
+		}, NilDecoder)
 		go func() {
 			// give the writer time to write the response
 			time.Sleep(100 * time.Millisecond)
@@ -210,13 +214,13 @@ func TestListenAndServe(t *testing.T) {
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
 		s := testServer(conn)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
 			time.Sleep(100 * time.Millisecond)
 			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "response"}`))
-		})
-		s.HandleRequest("bar", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
+		}, NilDecoder)
+		s.HandleRequest("bar", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
 			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"bar": "response"}`))
-		})
+		}, NilDecoder)
 		go func() {
 			// give the handlers time to respond
 			time.Sleep(200 * time.Millisecond)
@@ -285,7 +289,7 @@ func TestListenAndServe(t *testing.T) {
 		conn := NewConn(reader, writer)
 		s := testServer(conn)
 		cancelled := false
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
 			// give the cancel request time to be processed
 			time.Sleep(100 * time.Millisecond)
 			select {
@@ -294,7 +298,7 @@ func TestListenAndServe(t *testing.T) {
 			default:
 				rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "response"}`))
 			}
-		})
+		}, NilDecoder)
 		go func() {
 			// give the handlers time to respond
 			time.Sleep(200 * time.Millisecond)

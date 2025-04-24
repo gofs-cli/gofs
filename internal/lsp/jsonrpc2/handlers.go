@@ -4,51 +4,53 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
 
+const msgInitializeFailed = "error sending initialize error"
+
 func Initialize(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
-		log.Println("server is initializing")
+	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request, _ any) {
+		slog.Info("server is initializing")
 		if request.Params == nil {
-			log.Println("initialize request missing params")
+			slog.Warn("initialize request missing params")
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInvalidParams,
 				Message: "initialize request missing params",
 			}))
 			if err != nil {
-				log.Printf("error sending initialize error: %v", err)
+				slog.Error(msgInitializeFailed, "err", err)
 			}
 			return
 		}
 
-		// get the initialize message params, which include the rootPath
-		var params protocol.InitializeRequest
-		err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&params)
+		// get the initialize message p, which include the rootPath
+		var p protocol.InitializeRequest
+		err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&p)
 		if err != nil {
-			log.Printf("initialize request decode error: %s", err)
+			slog.Error("initialize request decode error", "err", err)
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInvalidParams,
 				Message: "initialize request decode error",
 			}))
 			if err != nil {
-				log.Printf("error sending initialize error: %v", err)
+				slog.Error(msgInitializeFailed, "err", err)
 			}
 			return
 		}
 
 		// call the initializer function with the rootPath
-		err = s.initializer(params.RootPath)
+		err = s.initializer(p.RootPath)
 		if err != nil {
-			log.Printf("fatal: initialize error: %s", err)
+			slog.Error("fatal: initialize error", "err", err)
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInternalError,
 				Message: "error calling initializer",
 			}))
 			if err != nil {
-				log.Printf("error sending initialize error: %v", err)
+				slog.Error(msgInitializeFailed, "err", err)
 			}
 			return
 		}
@@ -58,30 +60,30 @@ func Initialize(s *Server) Handler {
 			Capabilities: s.capabilities,
 		})
 		if err != nil {
-			log.Printf("json marshal error: %s", err)
+			slog.Error("json marshal error", "err", err)
 			return
 		}
 		err = s.conn.Write(protocol.NewResponse(request.Id, json.RawMessage(b)))
 		if err != nil {
-			log.Printf("error acknowledging shutdown: %v", err)
+			slog.Error("error acknowledging shutdown", "err", err)
 		}
 	}
 }
 
 func Initialized(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
-		log.Println("server is initialized")
+	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request, _ any) {
+		slog.Info("server is initialized")
 		s.isInitialized = true
 	}
 }
 
 func Shutdown(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
-		log.Println("server is shutting down")
-		s.isShutdown.Store(true)
+	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request, _ any) {
+		slog.Info("server is shutting down")
+		s.isShutdown = true
 		err := s.conn.Write(protocol.NewResponse(request.Id, nil)) // acknowledge shutdown
 		if err != nil {
-			log.Printf("error acknowledging shutdown: %v", err)
+			slog.Error("error acknowledging shutdown", "err", err)
 		}
 	}
 }
@@ -95,7 +97,7 @@ func (s *Server) Cancel(request protocol.Request) {
 	var params protocol.CancelRequest
 	err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&params)
 	if err != nil {
-		log.Printf("cancel request decode error: %s", err)
+		slog.Error("cancel request decode error", "err", err)
 		return
 	}
 
