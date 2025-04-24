@@ -43,14 +43,14 @@ func Start(debug bool) {
 	s.HandleLifecycle("shutdown", jsonrpc2.Shutdown(s))
 
 	// repo handlers
-	s.HandleRequest("textDocument/didOpen", repo.DidOpen(r))
-	s.HandleRequest("textDocument/didClose", repo.DidClose(r))
-	s.HandleRequest("textDocument/didChange", repo.DidChange(r))
-	s.HandleRequest("textDocument/didSave", repo.DidSave(r))
+	s.HandleRequest("textDocument/didOpen", repo.DidOpen(r), jsonrpc2.DecodeParams[repo.DidOpenRequest]())
+	s.HandleRequest("textDocument/didClose", repo.DidClose(r), jsonrpc2.DecodeParams[repo.DidCloseRequest]())
+	s.HandleRequest("textDocument/didChange", repo.DidChange(r), jsonrpc2.DecodeParams[repo.DidChangeRequest]())
+	s.HandleRequest("textDocument/didSave", repo.DidSave(r), nil)
 
 	// language handlers
-	s.HandleRequest("textDocument/hover", hover.Hover(r))
-	s.HandleRequest("textDocument/diagnostic", diagnostic.Diagnostic(r))
+	s.HandleRequest("textDocument/hover", hover.Hover(r), jsonrpc2.DecodeParams[hover.HoverRequest]())
+	s.HandleRequest("textDocument/diagnostic", diagnostic.Diagnostic(r), jsonrpc2.DecodeParams[diagnostic.DiagnosticRequest]())
 
 	err = s.ListenAndServe()
 	if err != nil {

@@ -13,16 +13,15 @@ import (
 )
 
 func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			que <- protocol.NewEmptyResponse(req.Id, FullDiagnosticResponse{})
 			return
 		}
 
-		// decode request
-		p, err := protocol.DecodeParams[DiagnosticRequest](req)
-		if err != nil {
+		p, ok := params.(DiagnosticRequest)
+		if !ok {
 			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInvalidParams,
 				Message: "error converting request to DiagnosticRequest",

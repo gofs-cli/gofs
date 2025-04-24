@@ -12,16 +12,15 @@ import (
 )
 
 func Hover(r *repo.Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
 			return
 		}
 
-		// decode request
-		p, err := protocol.DecodeParams[HoverRequest](req)
-		if err != nil {
+		p, ok := params.(HoverRequest)
+		if !ok {
 			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
 				Code:    protocol.ErrorCodeInvalidParams,
 				Message: "error converting request to HoverRequest",

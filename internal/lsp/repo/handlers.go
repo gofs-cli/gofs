@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"log/slog"
 	"path"
 	"path/filepath"
 
@@ -11,44 +10,52 @@ import (
 )
 
 func DidOpen(r *Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return
 		}
-		t, err := protocol.DecodeParams[DidOpenRequest](req)
-		if err != nil {
-			slog.Error("error converting request to DidOpenRequest", "err", err)
+
+		p, ok := params.(DidOpenRequest)
+		if !ok {
+			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
+				Code:    protocol.ErrorCodeInvalidParams,
+				Message: "error converting request to DidOpenRequest",
+			})
 			return
 		}
 
 		// only support opening templ files
-		if filepath.Ext(t.TextDocument.Path) == ".templ" {
-			r.OpenTemplFile(*t)
+		if filepath.Ext(p.TextDocument.Path) == ".templ" {
+			r.OpenTemplFile(p)
 		}
 	}
 }
 
 func DidChange(r *Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return
 		}
-		t, err := protocol.DecodeParams[DidChangeRequest](req)
-		if err != nil {
-			slog.Error("error converting request to DidChangeRequest", "err", err)
+
+		p, ok := params.(DidChangeRequest)
+		if !ok {
+			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
+				Code:    protocol.ErrorCodeInvalidParams,
+				Message: "error converting request to DidChangeRequest",
+			})
 			return
 		}
 
 		// replace templ file content
-		if filepath.Ext(t.TextDocument.Path) == ".templ" {
-			r.ChangeTemplFile(*t)
+		if filepath.Ext(p.TextDocument.Path) == ".templ" {
+			r.ChangeTemplFile(p)
 			return
 		}
 		// else check if routes file changed
-		if path.Base(t.TextDocument.Path) == "routes.go" {
-			b := []byte(t.ContentChanges[0].Text)
+		if path.Base(p.TextDocument.Path) == "routes.go" {
+			b := []byte(p.ContentChanges[0].Text)
 			r.UpdateRoutes(b)
 			return
 		}
@@ -56,26 +63,30 @@ func DidChange(r *Repo) jsonrpc2.Handler {
 }
 
 func DidClose(r *Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			return
 		}
-		t, err := protocol.DecodeParams[DidCloseRequest](req)
-		if err != nil {
-			slog.Error("error converting request to DidCloseRequest: %s", "err", err)
+
+		p, ok := params.(DidCloseRequest)
+		if !ok {
+			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
+				Code:    protocol.ErrorCodeInvalidParams,
+				Message: "error converting request to DidCloseRequest",
+			})
 			return
 		}
 
-		if filepath.Ext(t.TextDocument.Path) != ".templ" {
+		if filepath.Ext(p.TextDocument.Path) != ".templ" {
 			return
 		}
-		r.CloseTemplFile(*t)
+		r.CloseTemplFile(p)
 	}
 }
 
 func DidSave(r *Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
 		// do nothing
 	}
 }

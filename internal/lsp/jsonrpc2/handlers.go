@@ -12,7 +12,7 @@ import (
 const msgInitializeFailed = "error sending initialize error"
 
 func Initialize(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request, _ any) {
 		slog.Info("server is initializing")
 		if request.Params == nil {
 			slog.Warn("initialize request missing params")
@@ -26,9 +26,9 @@ func Initialize(s *Server) Handler {
 			return
 		}
 
-		// get the initialize message params, which include the rootPath
-		var params protocol.InitializeRequest
-		err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&params)
+		// get the initialize message p, which include the rootPath
+		var p protocol.InitializeRequest
+		err := json.NewDecoder(bytes.NewReader(*request.Params)).Decode(&p)
 		if err != nil {
 			slog.Error("initialize request decode error", "err", err)
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
@@ -42,7 +42,7 @@ func Initialize(s *Server) Handler {
 		}
 
 		// call the initializer function with the rootPath
-		err = s.initializer(params.RootPath)
+		err = s.initializer(p.RootPath)
 		if err != nil {
 			slog.Error("fatal: initialize error", "err", err)
 			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{
@@ -71,14 +71,14 @@ func Initialize(s *Server) Handler {
 }
 
 func Initialized(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request, _ any) {
 		slog.Info("server is initialized")
 		s.isInitialized = true
 	}
 }
 
 func Shutdown(s *Server) Handler {
-	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request) {
+	return func(ctx context.Context, _ chan protocol.Response, request protocol.Request, _ any) {
 		slog.Info("server is shutting down")
 		s.isShutdown = true
 		err := s.conn.Write(protocol.NewResponse(request.Id, nil)) // acknowledge shutdown
