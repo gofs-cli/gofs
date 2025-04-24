@@ -12,18 +12,13 @@ type Routes struct {
 	b      []byte // routes.go file content
 }
 
-func (r *Routes) IsValid() bool {
-	return r.b != nil
-}
-
-func (r *Routes) SetDefault() {
-	r.routes = []Route{}
-	r.b = []byte{}
-}
-
-func (r *Routes) Update(b []byte) {
-	r.routes = getRoutes(b)
-	r.b = b
+func NewRoutes(b []byte) *Routes {
+	r := getRoutes(b)
+	// TODO: return nil if parsing fails
+	return &Routes{
+		b:      b,
+		routes: r,
+	}
 }
 
 func (r *Routes) Routes() []Route {

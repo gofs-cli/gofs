@@ -23,7 +23,7 @@ func init() {
 func cmdLsp() {
 	fs := flag.NewFlagSet("lsp", flag.ExitOnError)
 	debug := fs.Bool("debug", false, "enable debug logging")
-	_ = fs.Parse(flag.Args()[1:]) // skip "lsp" itself
+	//	_ = fs.Parse(flag.Args()[1:]) // skip "lsp" itself
 
 	lsp.Start(*debug)
 }

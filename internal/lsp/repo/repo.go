@@ -18,11 +18,10 @@ import (
 )
 
 type Repo struct {
-	IsOpen        bool
 	RootPath      string
 	HasGofsConfig bool
 	Module        string
-	rt            routesFile.Routes  // routes file
+	rt            *routesFile.Routes // routes file
 	ot            sync.Map           // open templ files
 	pkgs          map[string]pkg.Pkg // loaded packages
 	shouldLoad    sync.Map           // files that are being loaded or have loaded
@@ -31,7 +30,6 @@ type Repo struct {
 func NewRepo() *Repo {
 	// open must be called first and creates the repo
 	return &Repo{
-		IsOpen:     false,
 		ot:         sync.Map{},
 		shouldLoad: sync.Map{},
 	}
@@ -42,36 +40,38 @@ func (r *Repo) Open(rootPath string) error {
 
 	// check if .gofs config folder exists
 	if _, err := os.Stat(path.Join(rootPath, ".gofs")); errors.Is(err, os.ErrNotExist) {
-		r.IsOpen = true
 		r.HasGofsConfig = false
 		return nil
 	}
 	r.HasGofsConfig = true
 
-	// check if go.mod file exists
-	modFile, err := os.ReadFile(path.Join(rootPath, "go.mod"))
+	// check if go.mod file exists and get module name
+	gp := path.Join(rootPath, "go.mod")
+	mf, err := os.ReadFile(path.Join(rootPath, "go.mod"))
 	if err != nil {
 		return err
 	}
-
-	mod, err := modfile.Parse(path.Join(rootPath, "go.mod"), modFile, nil)
+	mod, err := modfile.Parse(gp, mf, nil)
 	if err != nil {
 		return err
 	}
 	r.Module = mod.Module.Mod.Path
 
 	// read routes.go file and parse routes
-	routesFile, err := os.ReadFile(path.Join(rootPath, "internal", "server", "routes.go"))
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	rp := path.Join(rootPath, "internal", "server", "routes.go")
+	rf, err := os.ReadFile(rp)
+	if errors.Is(err, os.ErrNotExist) {
+		r.rt = nil
+		return nil
+	}
+	if err != nil {
 		return err
-	} else if errors.Is(err, os.ErrNotExist) {
-		r.rt.SetDefault()
-	} else {
-		r.rt.Update(routesFile)
-		r.ReloadPkgs()
 	}
 
-	r.IsOpen = true
+	if r.rt = routesFile.NewRoutes(rf); r.rt == nil {
+		return nil
+	}
+	r.ReloadPkgs()
 	return nil
 }
 
@@ -80,7 +80,7 @@ func (r *Repo) IsGofs() bool {
 }
 
 func (r *Repo) IsValidGofs() bool {
-	return r.IsOpen && r.HasGofsConfig && r.Module != "" && r.rt.IsValid()
+	return r.HasGofsConfig && r.rt != nil && r.Module != ""
 }
 
 func (r *Repo) GetTemplFile(path string) *templFile.TemplFile {
@@ -226,21 +226,20 @@ func (r *Repo) ReloadPkgs() {
 }
 
 func (r *Repo) UpdateRoutes(b []byte) {
-	if !r.IsOpen {
-		return
-	}
-
-	r.rt.Update(b)
+	r.rt = routesFile.NewRoutes(b)
 	r.RecalculateTemplUrls()
 	r.ReloadPkgs()
 }
 
 func (r *Repo) Routes() []routesFile.Route {
+	if r.rt == nil {
+		return nil
+	}
 	return r.rt.Routes()
 }
 
 func (r *Repo) GetRoute(index int) (*routesFile.Route, error) {
-	if !r.IsOpen {
+	if r.rt == nil {
 		return nil, errors.New("repo is not open")
 	}
 
