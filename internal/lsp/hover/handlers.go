@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/gofs-cli/gofs/internal/lsp/jsonrpc2"
@@ -12,49 +13,42 @@ import (
 )
 
 func Hover(r *repo.Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) error {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
-			return
+			return nil
 		}
 
-		p, ok := params.(HoverRequest)
-		if !ok {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "error converting request to HoverRequest",
-			})
-			return
+		p, err := protocol.DecodeParams[HoverRequest](req)
+		if err != nil {
+			return jsonrpc2.ErrInvalidParams
 		}
 
 		// only support hover over templ files
 		if filepath.Ext(p.TextDocument.Path) != ".templ" {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
-			return
+			return nil
 		}
 
 		// get the templ file
 		templFile := r.GetTemplFile(p.TextDocument.Path)
 		if templFile == nil {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInternalError,
-				Message: "templ file not found",
-			})
-			return
+			slog.Error("templ file not found", "path", p.TextDocument.Path)
+			return jsonrpc2.ErrInternalError
 		}
 
 		uriIndex := HoveredUri(*templFile, p.Position.Line, p.Position.Character)
 		if uriIndex == -1 {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
-			return
+			return nil
 		}
 
 		// no route found for uri
 		routeIndex := templFile.UrisRouteIndex[uriIndex]
 		if routeIndex == -1 {
 			que <- protocol.NewEmptyResponse(req.Id, HoverResponse{})
-			return
+			return nil
 		}
 
 		// uri has a route
@@ -71,12 +65,10 @@ func Hover(r *repo.Repo) jsonrpc2.Handler {
 			},
 		})
 		if err != nil {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInternalError,
-				Message: fmt.Sprintf("json marshal error: %s", err),
-			})
-			return
+			return jsonrpc2.ErrInternalError
 		}
+
 		que <- protocol.NewResponse(req.Id, json.RawMessage(b))
+		return nil
 	}
 }

@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -65,4 +66,14 @@ func BaseMessage(r any) ([]byte, error) {
 	msg := []byte("Content-Length: " + strconv.Itoa(len(b)) + "\r\n\r\n")
 	msg = append(msg, b...)
 	return msg, nil
+}
+
+func DecodeParams[T any](r Request) (*T, error) {
+	var params T
+	err := json.NewDecoder(bytes.NewReader(*r.Params)).Decode(&params)
+	if err != nil {
+		return nil, fmt.Errorf("text document request decode error: %s", err)
+	}
+
+	return &params, nil
 }

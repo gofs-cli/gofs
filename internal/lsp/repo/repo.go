@@ -84,8 +84,8 @@ func (r *Repo) IsValidGofs() bool {
 }
 
 func (r *Repo) GetTemplFile(path string) *templFile.TemplFile {
+	retry := 0
 	for {
-		// TODO add a counter to abort after n attempts
 		if templ, ok := r.ot.Load(path); ok {
 			t := templ.(templFile.TemplFile)
 			return &t
@@ -93,10 +93,14 @@ func (r *Repo) GetTemplFile(path string) *templFile.TemplFile {
 		if _, ok := r.shouldLoad.Load(path); ok {
 			// the file is loading so wait
 			time.Sleep(100 * time.Millisecond)
-		} else {
+			continue
+		}
+		retry++
+		if retry > 3 {
 			// a request to load the file was not sent
 			return nil
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

@@ -37,20 +37,17 @@ func Start(debug bool) {
 		os.Exit(1)
 	}
 
-	// lifecycle handlers
-	s.HandleLifecycle("initialize", jsonrpc2.Initialize(s))
-	s.HandleLifecycle("initialized", jsonrpc2.Initialized(s))
-	s.HandleLifecycle("shutdown", jsonrpc2.Shutdown(s))
-
 	// repo handlers
-	s.HandleRequest("textDocument/didOpen", repo.DidOpen(r), jsonrpc2.DecodeParams[repo.DidOpenRequest]())
-	s.HandleRequest("textDocument/didClose", repo.DidClose(r), jsonrpc2.DecodeParams[repo.DidCloseRequest]())
-	s.HandleRequest("textDocument/didChange", repo.DidChange(r), jsonrpc2.DecodeParams[repo.DidChangeRequest]())
-	s.HandleRequest("textDocument/didSave", repo.DidSave(r), nil)
+	s.HandleRequest("textDocument/didOpen", repo.DidOpen(r))
+	s.HandleRequest("textDocument/didClose", repo.DidClose(r))
+	s.HandleRequest("textDocument/didChange", repo.DidChange(r))
+	s.HandleRequest("textDocument/didSave", repo.DidSave(r))
 
-	// language handlers
-	s.HandleRequest("textDocument/hover", hover.Hover(r), jsonrpc2.DecodeParams[hover.HoverRequest]())
-	s.HandleRequest("textDocument/diagnostic", diagnostic.Diagnostic(r), jsonrpc2.DecodeParams[diagnostic.DiagnosticRequest]())
+	// hover handlers
+	s.HandleRequest("textDocument/hover", hover.Hover(r))
+
+	// diagnostic handlers
+	s.HandleRequest("textDocument/diagnostic", diagnostic.Diagnostic(r))
 
 	err = s.ListenAndServe()
 	if err != nil {

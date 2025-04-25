@@ -48,8 +48,8 @@ templ literalLink() {
 			uri.NewUriFromTo(
 				"POST",
 				`"/link"`,
-				model.Pos{Line: 17, Col: 4},
-				model.Pos{Line: 17, Col: 11},
+				model.Pos{Line: 17, Col: 13},
+				model.Pos{Line: 17, Col: 18},
 			),
 		}
 		if !reflect.DeepEqual(uris, expect) {

@@ -3,7 +3,7 @@ package diagnostic
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"path"
 	"path/filepath"
 
@@ -13,20 +13,16 @@ import (
 )
 
 func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
-	return func(ctx context.Context, que chan protocol.Response, req protocol.Request, params any) {
+	return func(ctx context.Context, que chan protocol.Response, req protocol.Request) error {
 		// only support valid gofs repos
 		if !r.IsValidGofs() {
 			que <- protocol.NewEmptyResponse(req.Id, FullDiagnosticResponse{})
-			return
+			return nil
 		}
 
-		p, ok := params.(DiagnosticRequest)
-		if !ok {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInvalidParams,
-				Message: "error converting request to DiagnosticRequest",
-			})
-			return
+		p, err := protocol.DecodeParams[DiagnosticRequest](req)
+		if err != nil {
+			return jsonrpc2.ErrInvalidParams
 		}
 
 		diagnostics := make([]DiagnosticResponse, 0)
@@ -44,11 +40,8 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 			// get the templ file
 			templFile := r.GetTemplFile(p.TextDocument.Path)
 			if templFile == nil {
-				que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-					Code:    protocol.ErrorCodeInternalError,
-					Message: "templ file not found",
-				})
-				return
+				slog.Error("templ file not found", "path", p.TextDocument.Path)
+				return jsonrpc2.ErrInternalError
 			}
 
 			for _, uri := range templFile.Uris {
@@ -64,12 +57,10 @@ func Diagnostic(r *repo.Repo) jsonrpc2.Handler {
 			Items: diagnostics,
 		})
 		if err != nil {
-			que <- protocol.NewResponseError(req.Id, protocol.ResponseError{
-				Code:    protocol.ErrorCodeInternalError,
-				Message: fmt.Sprintf("json marshal error: %s", err),
-			})
-			return
+			return jsonrpc2.ErrInternalError
 		}
+
 		que <- protocol.NewResponse(req.Id, json.RawMessage(b))
+		return nil
 	}
 }

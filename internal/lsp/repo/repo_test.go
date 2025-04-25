@@ -20,10 +20,6 @@ type testReader struct {
 	mutex sync.Mutex
 }
 
-func NilDecoder(_ protocol.Request) (any, error) {
-	return nil, nil
-}
-
 func newTestReader(reqs []protocol.Request) *testReader {
 	return &testReader{
 		reqs: reqs,
@@ -63,14 +59,6 @@ func (r *testReader) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func testServer(c *jsonrpc2.Conn) *jsonrpc2.Server {
-	s, _ := jsonrpc2.NewServer(c, func(string) error { return nil }, protocol.ServerCapabilities{})
-	s.HandleLifecycle("initialize", jsonrpc2.Initialize(s))
-	s.HandleLifecycle("initialized", jsonrpc2.Initialized(s))
-	s.HandleLifecycle("shutdown", jsonrpc2.Shutdown(s))
-	return s
-}
-
 func TestListenAndServe(t *testing.T) {
 	t.Parallel()
 
@@ -104,9 +92,9 @@ func TestListenAndServe(t *testing.T) {
 		})
 		writer := new(bytes.Buffer)
 		conn := jsonrpc2.NewConn(reader, writer)
-		s := testServer(conn)
+		s, _ := jsonrpc2.NewServer(conn, func(string) error { return nil }, protocol.ServerCapabilities{})
 		r := NewRepo()
-		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request, _ any) {
+		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) error {
 			r.OpenTemplFile(DidOpenRequest{
 				TextDocument: protocol.TextDocument{
 					Path: "/foo/bar/templ.templ",
@@ -117,15 +105,17 @@ templ Test() {}
 				},
 			})
 			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"didOpen": "response"}`))
-		}, NilDecoder)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request, _ any) {
+			return nil
+		})
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) error {
 			t := r.GetTemplFile("/foo/bar/templ.templ")
 			if t == nil {
 				rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "fail"}`))
 			} else {
 				rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "response"}`))
 			}
-		}, NilDecoder)
+			return nil
+		})
 		go func() {
 			// give the handlers time to respond
 			time.Sleep(200 * time.Millisecond)
@@ -191,9 +181,9 @@ templ Test() {}
 		})
 		writer := new(bytes.Buffer)
 		conn := jsonrpc2.NewConn(reader, writer)
-		s := testServer(conn)
+		s, _ := jsonrpc2.NewServer(conn, func(string) error { return nil }, protocol.ServerCapabilities{})
 		r := NewRepo()
-		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request, _ any) {
+		s.HandleRequest("didOpen", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) error {
 			r.OpenTemplFile(DidOpenRequest{
 				TextDocument: protocol.TextDocument{
 					Path: "/foo/bar/templ.templ",
@@ -206,10 +196,12 @@ templ Test() {}
 			// simulate a long running process
 			time.Sleep(100 * time.Millisecond)
 			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"didOpen": "response"}`))
-		}, NilDecoder)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request, _ any) {
+			return nil
+		})
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, rs protocol.Request) error {
 			rq <- protocol.NewResponse(rs.Id, json.RawMessage(`{"foo": "response"}`))
-		}, NilDecoder)
+			return nil
+		})
 		go func() {
 			// give the handlers time to respond
 			time.Sleep(200 * time.Millisecond)

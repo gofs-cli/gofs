@@ -1,88 +1,50 @@
 package jsonrpc2
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/gofs-cli/gofs/internal/lsp/protocol"
 )
 
-type (
-	Handler func(context.Context, chan protocol.Response, protocol.Request, any)
-	Decoder func(protocol.Request) (any, error)
+const (
+	DefaultTimeout = 2 * time.Second
 )
 
-func DecodeParams[T any]() Decoder {
-	return func(req protocol.Request) (any, error) {
-		var params T
-		err := json.NewDecoder(bytes.NewReader(*req.Params)).Decode(&params)
-		if err != nil {
-			return nil, fmt.Errorf("text document request decode error: %s", err)
-		}
-
-		return params, nil
-	}
-}
+type Handler func(context.Context, chan protocol.Response, protocol.Request) error
 
 type Server struct {
-	conn              *Conn
-	lifecycleHandlers map[string]Handler // lifecycle events
-	handlers          map[string]Handler // notification and request events
-	decoders          map[string]Decoder // decode request params
-	isInitialized     bool
-	isShutdown        bool
-	initializer       func(string) error // function to call when rootPath is known
-	capabilities      protocol.ServerCapabilities
-	active            sync.Map
+	conn          *Conn
+	handlers      map[string]Handler // notification and request events
+	isInitialized bool
+	isShutdown    bool
+	initializer   func(string) error // function to call when rootPath is known
+	capabilities  protocol.ServerCapabilities
+	active        sync.Map // active requests
 }
 
-// return a server with the connection set and a function that takes the rootPath tp initialize the lsp
+// return a server with the connection set and a function that takes the rootPath to initialize the lsp
 func NewServer(conn *Conn, initializer func(string) error, capabilities protocol.ServerCapabilities) (*Server, error) {
 	if conn == nil {
 		return nil, fmt.Errorf("no connection")
 	}
 
 	return &Server{
-		conn:              conn,
-		lifecycleHandlers: make(map[string]Handler),
-		handlers:          make(map[string]Handler),
-		decoders:          make(map[string]Decoder),
-		isInitialized:     false,
-		isShutdown:        false,
-		initializer:       initializer,
-		capabilities:      capabilities,
-		active:            sync.Map{},
+		conn:          conn,
+		handlers:      make(map[string]Handler),
+		isInitialized: false,
+		isShutdown:    false,
+		initializer:   initializer,
+		capabilities:  capabilities,
+		active:        sync.Map{},
 	}, nil
 }
 
-func (s *Server) HandleLifecycle(method string, handler Handler) {
-	s.lifecycleHandlers[method] = handler
-}
-
-func (s *Server) HandleRequest(method string, handler Handler, decoder Decoder) {
+func (s *Server) HandleRequest(method string, handler Handler) {
 	s.handlers[method] = handler
-	s.decoders[method] = decoder
-}
-
-func (s *Server) startRequestWithContext(id int) context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.active.Store(id, cancel)
-	return ctx
-}
-
-func (s *Server) endRequest(id int) {
-	s.active.Delete(id)
-}
-
-func (s *Server) isRunning(id int) (bool, context.CancelFunc) {
-	if cancelFunc, ok := s.active.Load(id); ok {
-		return true, cancelFunc.(context.CancelFunc)
-	}
-	return false, nil
 }
 
 func (s *Server) ListenAndServe() error {
@@ -90,9 +52,12 @@ func (s *Server) ListenAndServe() error {
 
 	// responses from handlers are written asynchronously using this goroutine
 	responseQueue := make(chan protocol.Response)
+	defer close(responseQueue)
 	go func() {
 		for response := range responseQueue {
 			if s.isShutdown {
+				// the spec says that once shutdown is initiated, the server
+				// should not send any more responses
 				break
 			}
 			err := s.conn.Write(response)
@@ -104,31 +69,40 @@ func (s *Server) ListenAndServe() error {
 
 	// main loop
 	for {
+		// read the next request
 		request, err := s.conn.Read()
 		if err != nil {
 			slog.Error("error reading request", "err", err)
 			continue
 		}
 
-		if request.Method == "exit" {
+		// handle lifecycle events first synchronously
+		switch request.Method {
+		case "initialize":
+			slog.Info("server is initializing")
+			s.Initialize(*request)
+			continue
+		case "initialized":
+			slog.Info("server is initialized")
+			s.isInitialized = true // ready to process requests
+			continue
+		case "shutdown":
+			slog.Info("server is shutting down")
+			s.Shutdown(*request)
+			continue
+		case "exit":
 			slog.Info("server exit")
 			// graceful exit
 			return nil
 		}
 
-		// handle lifecycle events first
-		if s.lifecycleHandlers[request.Method] != nil {
-			s.lifecycleHandlers[request.Method](context.Background(), responseQueue, *request, nil)
-			continue
-		}
-
 		// do not process requests if lifecycle is before initialization or after shutdown
 		if !s.isInitialized || s.isShutdown {
-			// requests should error with InvalidRequest
-			err := s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{Code: protocol.ErrorCodeInvalidRequest, Message: "received request after shutdown"}))
-			if err != nil {
-				slog.Error("error writing response", "err", err)
-			}
+			// requests should error with InvalidRequest according to the spec
+			responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+				Code:    protocol.ErrorCodeInvalidRequest,
+				Message: "received request after shutdown",
+			})
 			continue
 		}
 
@@ -138,24 +112,54 @@ func (s *Server) ListenAndServe() error {
 			continue
 		}
 
-		if s.handlers[request.Method] != nil {
-			params, err := s.decoders[request.Method](*request)
-			if err != nil {
-				slog.Error("error decoding request", "err", err)
-				_ = s.conn.Write(protocol.NewResponseError(request.Id, protocol.ResponseError{Code: protocol.ErrorCodeInvalidParams, Message: "error decoding request"}))
-				continue
-			}
-			ctx := s.startRequestWithContext(request.Id)
-			c := make(chan bool)
-			go func() {
-				c <- true
-				s.handlers[request.Method](ctx, responseQueue, *request, params)
-				s.endRequest(request.Id)
-			}()
-			<-c
+		// handle unhandled methods
+		if s.handlers[request.Method] == nil {
+			slog.Warn("unhandled method", "method", request.Method)
 			continue
 		}
 
-		slog.Warn("unhandled method", "method", request.Method)
+		// start request with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+		s.active.Store(request.Id, cancel)
+
+		// handle request asynchronously
+		go func() {
+			defer s.active.Delete(request.Id)
+
+			err := s.handlers[request.Method](ctx, responseQueue, *request)
+			if err != nil {
+				switch err {
+				case ErrInvalidParams:
+					slog.Error("invalid params", "err", err)
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInvalidParams,
+						Message: fmt.Sprintf("error decoding params for request %d", request.Id),
+					})
+				case ErrInternalError:
+					slog.Error("handler error", "err", err)
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInternalError,
+						Message: fmt.Sprintf("internal error processing request %d", request.Id),
+					})
+				default:
+					slog.Error("unhandled error", "err", err)
+					responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+						Code:    protocol.ErrorCodeInternalError,
+						Message: fmt.Sprintf("internal error processing request %d", request.Id),
+					})
+				}
+				return
+			}
+
+			if ctx.Err() != nil {
+				// Handler timed out or was cancelled
+				slog.Error("handler timed out or was cancelled", "method", request.Method, "id", request.Id)
+				responseQueue <- protocol.NewResponseError(request.Id, protocol.ResponseError{
+					Code:    protocol.ErrorCodeInternalError,
+					Message: "handler timed out or was cancelled",
+				})
+			}
+		}()
+
 	}
 }

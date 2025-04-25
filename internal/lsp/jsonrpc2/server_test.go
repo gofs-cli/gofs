@@ -19,10 +19,6 @@ type testReader struct {
 	mutex sync.Mutex
 }
 
-func NilDecoder(_ protocol.Request) (any, error) {
-	return nil, nil
-}
-
 func newTestReader(reqs []protocol.Request) *testReader {
 	return &testReader{
 		reqs: reqs,
@@ -60,14 +56,6 @@ func (r *testReader) Read(p []byte) (int, error) {
 	copy(p, msg)
 	r.cur++
 	return len(p), nil
-}
-
-func testServer(c *Conn) *Server {
-	s, _ := NewServer(c, func(string) error { return nil }, protocol.ServerCapabilities{})
-	s.HandleLifecycle("initialize", Initialize(s))
-	s.HandleLifecycle("initialized", Initialized(s))
-	s.HandleLifecycle("shutdown", Shutdown(s))
-	return s
 }
 
 func TestListenAndServe(t *testing.T) {
@@ -108,9 +96,6 @@ func TestListenAndServe(t *testing.T) {
 			rp = rootPath
 			return nil
 		}, protocol.ServerCapabilities{})
-		s.HandleLifecycle("initialize", Initialize(s))
-		s.HandleLifecycle("initialized", Initialized(s))
-		s.HandleLifecycle("shutdown", Shutdown(s))
 		if err != nil {
 			t.Error(err)
 		}
@@ -147,10 +132,11 @@ func TestListenAndServe(t *testing.T) {
 		})
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
-		s := testServer(conn)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
+		s, _ := NewServer(conn, func(string) error { return nil }, protocol.ServerCapabilities{})
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) error {
 			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "bar"}`))
-		}, NilDecoder)
+			return nil
+		})
 		go func() {
 			// give the writer time to write the response
 			time.Sleep(100 * time.Millisecond)
@@ -213,14 +199,16 @@ func TestListenAndServe(t *testing.T) {
 		})
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
-		s := testServer(conn)
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
+		s, _ := NewServer(conn, func(string) error { return nil }, protocol.ServerCapabilities{})
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) error {
 			time.Sleep(100 * time.Millisecond)
 			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "response"}`))
-		}, NilDecoder)
-		s.HandleRequest("bar", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
+			return nil
+		})
+		s.HandleRequest("bar", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) error {
 			rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"bar": "response"}`))
-		}, NilDecoder)
+			return nil
+		})
 		go func() {
 			// give the handlers time to respond
 			time.Sleep(200 * time.Millisecond)
@@ -287,9 +275,9 @@ func TestListenAndServe(t *testing.T) {
 		})
 		writer := new(bytes.Buffer)
 		conn := NewConn(reader, writer)
-		s := testServer(conn)
+		s, _ := NewServer(conn, func(string) error { return nil }, protocol.ServerCapabilities{})
 		cancelled := false
-		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request, _ any) {
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) error {
 			// give the cancel request time to be processed
 			time.Sleep(100 * time.Millisecond)
 			select {
@@ -298,7 +286,8 @@ func TestListenAndServe(t *testing.T) {
 			default:
 				rq <- protocol.NewResponse(r.Id, json.RawMessage(`{"foo": "response"}`))
 			}
-		}, NilDecoder)
+			return nil
+		})
 		go func() {
 			// give the handlers time to respond
 			time.Sleep(200 * time.Millisecond)
@@ -323,9 +312,72 @@ func TestListenAndServe(t *testing.T) {
 		if !cancelled {
 			t.Errorf("expected request to be cancelled but want not")
 		}
-		isRunning, _ := s.isRunning(3)
-		if isRunning {
+		isRunning, _ := s.active.Load(3)
+		if isRunning != nil {
 			t.Errorf("expected request to be cancelled but was not")
+		}
+	})
+
+	t.Run("server times out handler", func(t *testing.T) {
+		initParams := json.RawMessage(`{"rootPath": "/foo/bar"}`)
+		reader := newTestReader([]protocol.Request{
+			{
+				Version: "2.0",
+				Id:      1,
+				Method:  protocol.RequestInitialize,
+				Params:  &initParams,
+			},
+			{
+				Version: "2.0",
+				Id:      2,
+				Method:  protocol.NotificationInitialized,
+				Params:  nil,
+			},
+			{
+				Version: "2.0",
+				Id:      3,
+				Method:  "foo",
+				Params:  nil,
+			},
+		})
+		writer := new(bytes.Buffer)
+		conn := NewConn(reader, writer)
+		s, _ := NewServer(conn, func(string) error { return nil }, protocol.ServerCapabilities{})
+		s.HandleRequest("foo", func(ctx context.Context, rq chan protocol.Response, r protocol.Request) error {
+			// wait DefaultTimeout
+			time.Sleep(DefaultTimeout + 100*time.Millisecond)
+			return nil
+		})
+		go func() {
+			// give the handlers time to respond
+			time.Sleep(DefaultTimeout + 200*time.Millisecond)
+			reader.addReq(protocol.Request{
+				Version: "2.0",
+				Id:      4,
+				Method:  protocol.RequestShutdown,
+				Params:  nil,
+			})
+			reader.addReq(protocol.Request{
+				Version: "2.0",
+				Id:      5,
+				Method:  protocol.NotificationExit,
+				Params:  nil,
+			})
+		}()
+		err := s.ListenAndServe()
+		if err != nil {
+			t.Error(err)
+		}
+
+		// init response
+		expected := "Content-Length: 206\r\n\r\n" + `{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":0,"hoverProvider":false,"diagnosticProvider":{"identifier":"","interFileDependencies":false,"workspaceDiagnostics":false}}},"error":null}`
+		// bar first
+		expected += "Content-Length: 109\r\n\r\n" + `{"jsonrpc":"2.0","id":3,"result":null,"error":{"code":-32603,"message":"handler timed out or was cancelled"}}`
+		// shutdown response
+		expected += "Content-Length: 51\r\n\r\n" + `{"jsonrpc":"2.0","id":4,"result":null,"error":null}`
+
+		if writer.String() != expected {
+			t.Errorf("expected:\n%v\ngot:\n%v", expected, writer.String())
 		}
 	})
 }
