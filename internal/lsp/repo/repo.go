@@ -23,7 +23,7 @@ type Repo struct {
 	Module        string
 	rt            *routesFile.Routes // routes file
 	ot            sync.Map           // open templ files
-	pkgs          map[string]pkg.Pkg // loaded packages
+	pkgs          sync.Map // loaded packages
 	shouldLoad    sync.Map           // files that are being loaded or have loaded
 }
 
@@ -104,9 +104,11 @@ func (r *Repo) GetTemplFile(path string) *templFile.TemplFile {
 	}
 }
 
-func (r *Repo) GetPkgFunc(pkg, f string) *pkg.Func {
-	if p, ok := r.pkgs[pkg]; ok {
-		return p.GetFunc(f)
+func (r *Repo) GetPkgFunc(p, f string) *pkg.Func {
+	if v, ok := r.pkgs.Load(p); ok {
+		
+		actualPkg := v.(pkg.Pkg)
+		return actualPkg.GetFunc(f)
 	}
 	return nil
 }
@@ -214,17 +216,17 @@ func (r *Repo) RecalculateTemplUrls() {
 func (r *Repo) ReloadPkgs() {
 	// can be called if the repo is not open
 	// clear old pkgs
-	r.pkgs = make(map[string]pkg.Pkg)
+	r.pkgs = sync.Map{}
 	for _, route := range r.rt.Routes() {
 		if route.Pkg == "" {
 			continue
 		}
-		if _, ok := r.pkgs[route.Pkg]; !ok {
+		if _, ok := r.pkgs.Load(route.Pkg); !ok {
 			pkg, err := pkg.GetPkg(route.Pkg)
 			if err != nil {
 				continue
 			}
-			r.pkgs[route.Pkg] = *pkg
+			r.pkgs.Store(route.Pkg, *pkg)
 		}
 	}
 }
