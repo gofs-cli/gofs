@@ -9,7 +9,7 @@ require (
 	golang.org/x/tools v0.32.0
 )
 
-require github.com/gofs-cli/azure-app-template v0.0.0-20250519160445-9b2b4ed49bf2 // indirect
+require github.com/gofs-cli/azure-app-template v0.0.0-20250519160445-9b2b4ed49bf2
 
 require (
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e
