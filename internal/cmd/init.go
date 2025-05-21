@@ -34,9 +34,10 @@ flags:
 
 
 Example:
-  gofs init mymodule /path/to/dir
   gofs init mymodule
-  gofs init mymodule -template=azure
+  gofs init mymodule /path/to/dir
+  gofs init -template=azure mymodule
+  gofs init -template=azure mymodule /path/to/dir
 
 `
 
@@ -54,29 +55,33 @@ func cmdInit() {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.StringVar(&template, "template", "default", "the template to use for the generated project")
 
-	args := os.Args[2:] // skip program name and command
-	fs.Parse(args)
+	args := os.Args[2:] // skip program name and command name
+	var err error
+	err = fs.Parse(args)
+	if err != nil {
+		fmt.Println("init: erorr parsing ", err)
+		return
+	}
 
 	fmt.Println("template is: ", template)
 	moduleName := ""
 	dir := ""
-	var err error
 
-	switch {
-	case len(args) == 0:
+	switch fs.NArg() {
+	case 0:
 		fmt.Println("init: missing module name")
 		fmt.Print(initUsage)
 		return
-	case len(args) == 1:
-		moduleName = args[0]
+	case 1:
+		moduleName = fs.Arg(0)
 		dir, err = os.Getwd()
 		if err != nil {
 			fmt.Println("init: ", err)
 			return
 		}
-	case len(args) == 2:
-		moduleName = args[0]
-		dir = args[1]
+	case 2:
+		moduleName = fs.Arg(0)
+		dir = fs.Arg(1)
 	default:
 		fmt.Println("init: too many arguments")
 		fmt.Print(initUsage)
