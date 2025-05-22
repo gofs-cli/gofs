@@ -12,11 +12,6 @@ import (
 	"github.com/gofs-cli/gofs/internal/gen"
 )
 
-const (
-	root              = "template"
-	defaultModuleName = "github.com/gofs-cli/template"
-)
-
 const initUsage = `usage: gofs init [module-name] [dir]
 
 "init" initializes a new module in the specified directory.
@@ -89,13 +84,16 @@ func cmdInit() {
 	}
 
 	var selectedTemplate embed.FS
+	var templateModuleName string
 	switch template {
 	case "azure":
+		templateModuleName = azureTemplate.ModuleName
 		selectedTemplate = azureTemplate.Folder
 	default:
+		templateModuleName = defaultTemplate.ModuleName
 		selectedTemplate = defaultTemplate.Folder
 	}
-	parser, err := gen.NewParser(dir, defaultModuleName, moduleName, selectedTemplate)
+	parser, err := gen.NewParser(dir, templateModuleName, moduleName, selectedTemplate)
 	if err != nil {
 		fmt.Println("init: ", err)
 		return
