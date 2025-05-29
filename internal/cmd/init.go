@@ -47,18 +47,18 @@ func init() {
 
 func cmdInit() {
 	var template string
-	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	fs := flag.NewFlagSet("init", flag.ExitOnError)
 	fs.StringVar(&template, "template", "default", "the template to use for the generated project")
 
 	args := os.Args[2:] // skip program name and command name
 	var err error
 	err = fs.Parse(args)
 	if err != nil {
-		fmt.Println("init: erorr parsing ", err)
-		return
+		os.Stderr.WriteString("init: error parsing flags: " + err.Error() + "\n")
+		os.Exit(1)
 	}
 
-	fmt.Println("template is: ", template)
+	fmt.Println("using template: ", template)
 	moduleName := ""
 	dir := ""
 
@@ -71,8 +71,8 @@ func cmdInit() {
 		moduleName = fs.Arg(0)
 		dir, err = os.Getwd()
 		if err != nil {
-			fmt.Println("init: ", err)
-			return
+			os.Stderr.WriteString("init: error getting current directory: " + err.Error() + "\n")
+			os.Exit(1)
 		}
 	case 2:
 		moduleName = fs.Arg(0)
@@ -95,8 +95,8 @@ func cmdInit() {
 	}
 	parser, err := gen.NewParser(dir, templateModuleName, moduleName, selectedTemplate)
 	if err != nil {
-		fmt.Println("init: ", err)
-		return
+		os.Stderr.WriteString("init: error creating parser: " + err.Error() + "\n")
+		os.Exit(1)
 	}
 	parser.Parse()
 }
