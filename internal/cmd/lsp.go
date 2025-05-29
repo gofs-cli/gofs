@@ -24,8 +24,11 @@ func init() {
 func cmdLsp() {
 	fs := flag.NewFlagSet("lsp", flag.ExitOnError)
 	debug := fs.Bool("debug", false, "enable debug logging")
-	_ = fs.Bool("stdio", true, "use stdio")
-	_ = fs.Parse(os.Args[2:]) // skip program name and command
+	err := fs.Parse(os.Args[2:]) // skip program name and command
+	if err != nil {
+		os.Stderr.WriteString("lsp: error parsing flags: " + err.Error() + "\n")
+		os.Exit(1)
+	}
 
 	lsp.Start(*debug)
 }
