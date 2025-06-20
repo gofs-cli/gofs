@@ -60,10 +60,11 @@ func TestAstStructFromStructType(t *testing.T) {
 	input := `package main
 
 type Foo struct {
-	ID        string  ` + "`" + `json:"id"  gofs:"pk"` + "`" + ` 
-	Bar       string  ` + "`" + `json:"bar" gofs:"searchable"` + "`" + `
-	TestInt   int
-	TestTime  time.Time
+	ID        string    ` + "`" + `json:"id"  gofs:"pk"` + "`" + ` 
+	Bar       string    ` + "`" + `json:"bar" gofs:"searchable"` + "`" + `
+	TestInt   int       ` + "`" + `json:"test-int" gofs:"searchable"` + "`" + `
+	TestFloat float64   ` + "`" + `json:"test-float" gofs:"searchable"` + "`" + `
+	TestTime  time.Time ` + "`" + `json:"test-time" gofs:"searchable"` + "`" + `
 	TestArray []SomeType
 }
 	`
@@ -109,12 +110,18 @@ type Foo struct {
 			{
 				StructName:  "Foo",
 				FieldNumber: 3,
+				FieldName:   "TestFloat",
+				FieldType:   "float64",
+			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 4,
 				FieldName:   "TestTime",
 				FieldType:   "time.Time",
 			},
 			{
 				StructName:  "Foo",
-				FieldNumber: 4,
+				FieldNumber: 5,
 				FieldName:   "TestArray",
 				FieldType:   "[]SomeType",
 			},
@@ -134,6 +141,27 @@ type Foo struct {
 				FieldType:   "string",
 				DBType:      "TEXT",
 			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 2,
+				FieldName:   "TestInt",
+				FieldType:   "int",
+				DBType:      "INTEGER",
+			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 3,
+				FieldName:   "TestFloat",
+				FieldType:   "float64",
+				DBType:      "REAL",
+			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 4,
+				FieldName:   "TestTime",
+				FieldType:   "time.Time",
+				DBType:      "TIMESTAMP",
+			},
 		},
 		PkFields: []AstField{
 			{
@@ -151,6 +179,27 @@ type Foo struct {
 				FieldName:   "Bar",
 				FieldType:   "string",
 				DBType:      "TEXT",
+			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 1,
+				FieldName:   "TestInt",
+				FieldType:   "int",
+				DBType:      "INTEGER",
+			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 2,
+				FieldName:   "TestFloat",
+				FieldType:   "float64",
+				DBType:      "REAL",
+			},
+			{
+				StructName:  "Foo",
+				FieldNumber: 3,
+				FieldName:   "TestTime",
+				FieldType:   "time.Time",
+				DBType:      "TIMESTAMP",
 			},
 		},
 	}

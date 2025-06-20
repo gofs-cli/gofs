@@ -46,6 +46,12 @@ func dbType(t string) string {
 		return "TEXT"
 	case "int":
 		return "INTEGER"
+	case "float64":
+		return "REAL"
+	case "bool":
+		return "BOOLEAN"
+	case "time.Time":
+		return "TIMESTAMP"
 	default:
 		return "TEXT"
 	}
