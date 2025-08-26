@@ -7,6 +7,7 @@ import (
 	"os"
 
 	azureTemplate "github.com/gofs-cli/azure-app-template"
+	fsTemplate "github.com/gofs-cli/fs-app-template"
 	defaultTemplate "github.com/gofs-cli/template"
 
 	"github.com/gofs-cli/gofs/internal/gen"
@@ -26,6 +27,8 @@ flags:
     Available names:
       - azure
           This template creates an app suitable for deployment to azure apps and expects azure auth tokens from Entra ID
+      - fs
+          This template creates an app for general apps using daisyUI/Tailwind/htmx/alpinejs/Go.
 
 
 Example:
@@ -86,6 +89,9 @@ func cmdInit() {
 	var selectedTemplate embed.FS
 	var templateModuleName string
 	switch template {
+	case "fse":
+		templateModuleName = fsTemplate.ModuleName
+		selectedTemplate = fsTemplate.Folder
 	case "azure":
 		templateModuleName = azureTemplate.ModuleName
 		selectedTemplate = azureTemplate.Folder
