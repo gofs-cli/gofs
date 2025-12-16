@@ -7,10 +7,10 @@ import (
 	"os"
 
 	azureTemplate "github.com/gofs-cli/azure-app-template"
-	fsTemplate "github.com/gofs-cli/fs-app-template"
 	defaultTemplate "github.com/gofs-cli/template"
 
 	"github.com/gofs-cli/gofs/internal/gen"
+	fsTemplate "github.com/gofs-cli/gofs/templates/fs-app"
 )
 
 const initUsage = `usage: gofs init [module-name] [dir]

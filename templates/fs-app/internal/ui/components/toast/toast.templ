@@ -1,0 +1,39 @@
+package toast
+
+const toastContainerID = "toast-container"
+
+templ Container() {
+	<div id={ toastContainerID }></div>
+}
+
+templ toast(toastType string) {
+	<div id={ toastContainerID } class="toast-container" hx-swap-oob="afterbegin">
+		<toast-element type={toastType}>
+			{ children... }
+		</toast-element>
+	</div>
+}
+
+templ success(msg string) {
+	@toast("success") {
+        <span>{ msg }</span>
+	}
+}
+
+templ info(msg string) {
+	@toast("info") {
+        <span>{ msg }</span>
+	}
+}
+
+templ warning(msg string) {
+	@toast("warning") {
+        <span>{ msg }</span>
+	}
+}
+
+templ err(msg string) {
+	@toast("error") {
+        <span>{ msg }</span>
+	}
+}

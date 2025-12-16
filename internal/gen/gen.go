@@ -57,7 +57,7 @@ func NewParser(dirPath, defaultModuleName, newModuleName string, template embed.
 	}, nil
 }
 
-func (p Parser) copyFile(path string, src fs.File) error {
+func (p *Parser) copyFile(path string, src fs.File) error {
 	dst, err := os.Create(filepath.Join(p.DirPath, path))
 	if err != nil {
 		return err
@@ -211,7 +211,7 @@ func (p *Parser) updateTempl(path string, file fs.File) error {
 	}
 	for i, n := range t.Nodes {
 		switch n := n.(type) {
-		case templParser.TemplateFileGoExpression:
+		case *templParser.TemplateFileGoExpression:
 			if strings.HasPrefix(n.Expression.Value, "import") {
 				node := n
 				node.Expression.Value = strings.ReplaceAll(node.Expression.Value, p.CurrentModName, p.NewModName)

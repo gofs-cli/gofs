@@ -1,0 +1,22 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=dev
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U user -d dev'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    ports:
+      - 5432:5432
+    logging:
+      driver: none
+  zipkin:
+    container_name: zipkin
+    image: openzipkin/zipkin
+    ports:
+      - 9411:9411
