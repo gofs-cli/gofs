@@ -1,0 +1,18 @@
+package ui
+
+import "github.com/gofs-cli/gofs/templates/fs-app/internal/ui/components/toast"
+
+templ IndexPage(page templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<meta charset="UTF-8"/>
+		<title>gofs</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1"/>
+		<link rel="stylesheet" href="/assets/css/styles.css"/>
+		<script defer src="/assets/js/app.js"></script>
+		<body>
+			@toast.Container()
+			@page
+		</body>
+	</html>
+}

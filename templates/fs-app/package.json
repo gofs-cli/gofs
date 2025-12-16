@@ -1,0 +1,21 @@
+{
+  "name": "fs-app-template",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "tailwind": "bunx @tailwindcss/cli -i ./internal/ui/styles.css -o ./internal/server/assets/css/styles.css",
+    "build": "bun build ./internal/ui/app.ts --format=esm --outfile=./internal/server/assets/js/app.js --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "daisyui": "^5.5.13",
+    "tailwindcss": "^4.1.18"
+  },
+  "dependencies": {
+    "htmx.org": "^4.0.0-alpha5"
+  }
+}

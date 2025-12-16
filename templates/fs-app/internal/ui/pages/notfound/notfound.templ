@@ -1,0 +1,34 @@
+package notfound
+
+import "github.com/gofs-cli/gofs/templates/fs-app/internal/ui/components/modal"
+
+css classLayout() {
+	display: grid;
+}
+
+templ layout(header, body templ.Component) {
+	<main class={ classLayout() }>
+		<div>
+			@header
+		</div>
+		<div>
+			@body
+		</div>
+	</main>
+}
+
+templ body() {
+	<h1>Not Found</h1>
+}
+
+templ ModalDemo() {
+	@modal.Modal() {
+		<div>
+			<h2>Demo Modal</h2>
+			<p>Modal content</p>
+			<button @click="close">
+				Close
+			</button>
+		</div>
+	}
+}

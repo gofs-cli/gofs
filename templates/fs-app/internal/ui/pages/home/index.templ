@@ -1,0 +1,16 @@
+package home
+
+templ layout(header, body templ.Component) {
+	<main class="grid">
+		<div>
+			@header
+		</div>
+		<div class="p-4">
+			@body
+		</div>
+	</main>
+}
+
+templ body() {
+	<h1>Home</h1>
+}

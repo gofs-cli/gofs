@@ -1,0 +1,19 @@
+name: Test
+
+on: workflow_call
+
+jobs:
+  test:
+    name: Golang unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Cached Checkout
+        uses: actions/download-artifact@v4
+        with:
+          name: checkout-${{ github.run_id }}
+      - uses: actions/setup-go@v5
+        name: Install Golang
+        with:
+          go-version-file: "go.mod"
+      - run: make test
+        name: Run unit tests
